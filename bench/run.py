@@ -165,6 +165,10 @@ class LoadSampler(threading.Thread):
         self.max_load = max(self.max_load, l1)
         with open(self.path, "a") as f:
             f.write(f"{time.time():.0f},{l1:.2f},{l5:.2f},{l15:.2f},{free_gb():.1f}\n")
+        # Whose load it is: this benchmark's own processes count too.
+        top = subprocess.run("ps -Ao pcpu,comm -r | head -6", shell=True, capture_output=True, text=True).stdout
+        with open(self.path.with_name("top.txt"), "a") as f:
+            f.write(f"--- {time.strftime('%H:%M:%S')} load {l1:.2f}\n{top}")
 
     def run(self):
         self.sample()
