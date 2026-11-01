@@ -101,11 +101,10 @@ class Runner:
 
     def run(self, tokens, positions, tables, max_blocks, out_rows, seqs):
         logits = self.forward(tokens, positions, tables, max_blocks, out_rows)
-        out = []
-        for row, seq in zip(logits, seqs):
-            if seq.temperature <= 0:
-                out.append(int(row.argmax()))
-            else:
+        out = logits.argmax(axis=1).tolist()  # greedy for all rows in one call
+        for i, seq in enumerate(seqs):
+            if seq.temperature > 0:
+                row = logits[i]
                 p = np.exp((row - row.max()) / seq.temperature)
-                out.append(int(self.rng.choice(len(p), p=p / p.sum())))
+                out[i] = int(self.rng.choice(len(p), p=p / p.sum()))
         return out

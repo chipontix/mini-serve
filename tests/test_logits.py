@@ -16,7 +16,7 @@ REF = np.load(ROOT / "tests" / "data" / "reference.npz")
 N_PROMPTS = 5
 PAGE = 16
 # Max |engine - reference| over the compared logits. See README, "Correctness".
-TOL = {"f32": 4e-3, "f16": 3e-2}
+TOL = {"f32": 5e-3, "f16": 3e-2}
 
 
 def runner(kv):

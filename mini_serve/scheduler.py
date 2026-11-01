@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from .blocks import BlockPool, block_hashes
 
 
-@dataclass
+@dataclass(eq=False)  # compared by identity: `seq in running` must not compare every field
 class Sequence:
     prompt: list
     max_tokens: int

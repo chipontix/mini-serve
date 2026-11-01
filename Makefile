@@ -21,7 +21,7 @@ $(PY): requirements.txt
 setup: $(PY) ## Python venv: numpy, tokenizers
 
 test: build weights setup ## scheduler and block pool tests, then logits vs transformers
-	$(PY) -m unittest -v tests.test_scheduler tests.test_logits
+	$(PY) -m unittest -v tests.test_scheduler tests.test_server tests.test_logits
 
 reference: weights ## regenerate tests/data/reference.npz with transformers on the CPU
 	uv venv -q --python 3.12 .venv-ref
