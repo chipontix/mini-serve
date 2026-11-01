@@ -146,6 +146,32 @@ def summarize(recs, reqs):
             "slo_met": ok / len(recs), "duration_s": span, "tokens": tokens}
 
 
+def free_gb():
+    st = os.statvfs(Path.home())
+    return st.f_bavail * st.f_frsize / 1e9
+
+
+class LoadSampler(threading.Thread):
+    """Records load average and free disk every 30 s into load.csv, for judging the run."""
+
+    def __init__(self, path, every=30.0):
+        super().__init__(daemon=True)
+        self.path, self.every, self.stop, self.max_load = path, every, threading.Event(), 0.0
+        with open(path, "w") as f:
+            f.write("unix_time,load1,load5,load15,free_disk_gb\n")
+
+    def sample(self):
+        l1, l5, l15 = os.getloadavg()
+        self.max_load = max(self.max_load, l1)
+        with open(self.path, "a") as f:
+            f.write(f"{time.time():.0f},{l1:.2f},{l5:.2f},{l15:.2f},{free_gb():.1f}\n")
+
+    def run(self):
+        self.sample()
+        while not self.stop.wait(self.every):
+            self.sample()
+
+
 def env_text():
     def sh(cmd):
         try:
@@ -159,6 +185,7 @@ def env_text():
         f"macOS: {sh('sw_vers -productVersion')}",
         f"power: {sh('pmset -g | grep -E \"powermode|lowpowermode\"')}",
         f"load before: {sh('uptime')}",
+        f"free disk before: {free_gb():.1f} GB",
         "top processes:", sh("ps -Ao pcpu,comm -r | head -6"),
     ])
 
@@ -181,6 +208,8 @@ def main():
     out = ROOT / "results" / args.label
     out.mkdir(parents=True, exist_ok=True)
     (out / "env.txt").write_text(env_text() + "\n")
+    sampler = LoadSampler(out / "load.csv")
+    sampler.start()
     rows, req_rows = [], []
 
     def measure(experiment, cfg, rate, num_blocks):
@@ -223,8 +252,13 @@ def main():
             w = csv.DictWriter(f, fieldnames=list(data[0]))
             w.writeheader()
             w.writerows(data)
+    sampler.stop.set()
+    sampler.sample()
     with open(out / "env.txt", "a") as f:
         f.write(f"load after: {subprocess.run('uptime', capture_output=True, text=True).stdout.strip()}\n")
+        f.write(f"free disk after: {free_gb():.1f} GB\n")
+        f.write(f"max 1-min load average sampled every 30 s: {sampler.max_load:.2f}"
+                f"{'  ABOVE 16: repeat this run' if sampler.max_load > 16 else ''}\n")
         f.write(f"command: {' '.join(sys.argv)}\nSLO: TTFT <= {SLO_TTFT} s, TPOT <= {SLO_TPOT} s\n")
     print(f"wrote {out}")
 
