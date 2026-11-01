@@ -113,6 +113,18 @@ class BlockPoolTest(unittest.TestCase):
         self.assertEqual(pool.allocate(), b1)         # reusing b1 evicts its cached content
         self.assertEqual(pool.lookup(hs), [b0])
 
+    def test_repeated_block_is_not_a_hit(self):
+        # [1, 2] at positions 0-1 and at 2-3 have different K/V (RoPE, context): the second
+        # block must not resolve to the first one's cache entry.
+        pool, sched, llm = make(page=2)
+        a = Sequence([1, 2, 1, 2, 1, 2, 7], max_tokens=3)
+        llm.generate([a])
+        b = Sequence([1, 2, 1, 2, 9], max_tokens=3)
+        llm.generate([b])
+        self.assertEqual(b.cached_tokens, 4)
+        self.assertEqual(a.output, reference(a.prompt, 3))
+        self.assertEqual(b.output, reference(b.prompt, 3))
+
     def test_disabled_cache_never_hits(self):
         pool = BlockPool(2, 2, prefix_cache=False)
         b = pool.allocate()

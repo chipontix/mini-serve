@@ -1,0 +1,8 @@
+# GitHub Actions run 41284318327 (commit e27ce70), macos-15 runner, step 'Build and test'
+test	Build and test	2026-11-01T07:19:46.8907940Z /Users/runner/work/mini-serve/mini-serve/weights/SmolLM2-135M/model.safetensors: OK
+test	Build and test	2026-11-01T07:20:39.5238770Z Ran 20 tests in 51.334s
+test	Build and test	2026-11-01T07:20:39.5238980Z OK
+test	Build and test	2026-11-01T07:20:39.5392480Z   max |logit error| kv=f16 decode: 7.18e-03 (tolerance 3e-02)
+test	Build and test	2026-11-01T07:20:39.5393030Z   max |logit error| kv=f16 prefill: 1.17e-02 (tolerance 3e-02)
+test	Build and test	2026-11-01T07:20:39.5393370Z   max |logit error| kv=f32 decode: 1.68e-04 (tolerance 5e-03)
+test	Build and test	2026-11-01T07:20:39.5393650Z   max |logit error| kv=f32 prefill: 2.16e-03 (tolerance 5e-03)

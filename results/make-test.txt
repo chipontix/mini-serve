@@ -1,7 +1,8 @@
-# make test, 2026-11-01 10:18, commit 04a1953 + working tree
+# make test, 2026-11-01 10:22
 test_allocate_release_lru (tests.test_scheduler.BlockPoolTest.test_allocate_release_lru) ... ok
 test_disabled_cache_never_hits (tests.test_scheduler.BlockPoolTest.test_disabled_cache_never_hits) ... ok
 test_prefix_hit_and_eviction (tests.test_scheduler.BlockPoolTest.test_prefix_hit_and_eviction) ... ok
+test_repeated_block_is_not_a_hit (tests.test_scheduler.BlockPoolTest.test_repeated_block_is_not_a_hit) ... ok
 test_continuous_matches_reference_and_shares_prefix (tests.test_scheduler.SchedulerTest.test_continuous_matches_reference_and_shares_prefix) ... ok
 test_fully_cached_prompt_still_computes_last_token (tests.test_scheduler.SchedulerTest.test_fully_cached_prompt_still_computes_last_token) ... ok
 test_new_request_joins_between_decode_steps (tests.test_scheduler.SchedulerTest.test_new_request_joins_between_decode_steps) ... ok
@@ -12,14 +13,14 @@ test_rejects_request_larger_than_pool (tests.test_scheduler.SchedulerTest.test_r
 test_shared_prefix_blocks_are_physically_shared (tests.test_scheduler.SchedulerTest.test_shared_prefix_blocks_are_physically_shared) ... ok
 test_static_batch_does_not_admit_until_done (tests.test_scheduler.SchedulerTest.test_static_batch_does_not_admit_until_done) ... ok
 test_static_matches_reference_without_cache (tests.test_scheduler.SchedulerTest.test_static_matches_reference_without_cache) ... ok
-test_concurrent_requests_match_sequential (tests.test_server.ServerTest.test_concurrent_requests_match_sequential) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 58882), raddr=('127.0.0.1', 58881)>
-test_errors (tests.test_server.ServerTest.test_errors) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 58900), raddr=('127.0.0.1', 58881)>
-test_stream_equals_non_stream (tests.test_server.ServerTest.test_stream_equals_non_stream) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 58904), raddr=('127.0.0.1', 58881)>
-test_token_id_prompt (tests.test_server.ServerTest.test_token_id_prompt) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 58910), raddr=('127.0.0.1', 58881)>
+test_concurrent_requests_match_sequential (tests.test_server.ServerTest.test_concurrent_requests_match_sequential) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59592), raddr=('127.0.0.1', 59591)>
+test_errors (tests.test_server.ServerTest.test_errors) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59611), raddr=('127.0.0.1', 59591)>
+test_stream_equals_non_stream (tests.test_server.ServerTest.test_stream_equals_non_stream) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59615), raddr=('127.0.0.1', 59591)>
+test_token_id_prompt (tests.test_server.ServerTest.test_token_id_prompt) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59629), raddr=('127.0.0.1', 59591)>
 All 5 prompts through the scheduler together (one batched prefill, batched decode): ... ok
 Prefill half the prompt, then one token per call: the decode path of the kernel. ... ok
 test_prefill_all_positions (tests.test_logits.LogitsTest.test_prefill_all_positions) ... ok
-Ran 20 tests in 27.213s
+Ran 21 tests in 23.213s
 OK
   max |logit error| kv=f16 decode: 7.26e-03 (tolerance 3e-02)
   max |logit error| kv=f16 prefill: 8.74e-03 (tolerance 3e-02)

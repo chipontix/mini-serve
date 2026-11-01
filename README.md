@@ -25,6 +25,7 @@ llama.cpp, MLX or other servers.
 | The engine computes the same logits as Hugging Face transformers | `make test`, `tests/test_logits.py`: 5 prompts, every position, prefill and token-by-token decode, fp32 and fp16 KV cache, against `transformers` on the CPU ([tolerances](#correctness)) |
 | The tolerance would catch small real bugs | [`scripts/tolerance_probe.py`](scripts/tolerance_probe.py): an RMSNorm eps or RoPE theta off by a little gives 3–4× the fp32 tolerance |
 | Block pool, prefix sharing, preemption and both schedulers keep every sequence's KV history intact | `make test`, `tests/test_scheduler.py`: a fake model checks, for every computed token, that the block table resolves to exactly that sequence's tokens |
+| Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 11 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
 | The HTTP API streams the same text it returns without streaming, and concurrent requests get the same tokens as sequential ones | `make test`, `tests/test_server.py` |
 | Continuous batching and the prefix cache vs a static batch, on one request stream | [Numbers](#numbers) (`make bench`) |
 
@@ -40,6 +41,7 @@ source, ~270 MB of weights).
 ```bash
 make test        # build, download weights, venv; scheduler, HTTP and logit tests
 make serve       # http://127.0.0.1:8000
+make mutation    # inject 11 bugs into pool/scheduler, check the tests catch each
 make bench LABEL=mine    # static vs continuous vs continuous+prefix, writes results/mine/
 python3 scripts/tables.py mine    # the README tables from results/mine/summary.csv
 make reference   # regenerate tests/data/reference.npz (needs torch + transformers, own venv)
