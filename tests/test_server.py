@@ -25,7 +25,7 @@ class ServerTest(unittest.TestCase):
 
     def post(self, body):
         c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
-        c.request("POST", "/v1/completions", json.dumps(body), {"Content-Type": "application/json"})
+        c.request("POST", "/v1/completions", json.dumps(body), {"Content-Type": "application/json", "Connection": "close"})
         return c.getresponse()
 
     def complete(self, prompt, n):
@@ -76,7 +76,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(self.post({"prompt": [10 ** 9], "max_tokens": 3}).status, 400)  # bad token id
         self.assertEqual(self.post({"prompt": "x", "max_tokens": 10 ** 6}).status, 400)  # larger than the pool
         c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
-        c.request("GET", "/v1/models")
+        c.request("GET", "/v1/models", headers={"Connection": "close"})
         self.assertEqual(json.loads(c.getresponse().read())["data"][0]["id"], "SmolLM2-135M")
 
 
