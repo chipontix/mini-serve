@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# A/B for README "What I learned" 1: engine loop in a thread of the HTTP process (commit d1c9880)
+# A/B for README "What I learned": engine loop in a thread of the HTTP process (commit d1c9880)
 # vs in its own process (this checkout). Same quick load (24 requests, 4 req/s, 3 configs),
 # rounds interleaved. Writes results/gil-ab/{thread,process}-N.csv and the step-time tables.
+# d1c9880 also called tok.get_vocab_size() once per prompt token (~1 s with the GIL held per
+# request, fixed later); the same fix is applied to it here, so the A/B isolates thread vs process.
 #   scripts/gil_ab.sh [ROUNDS]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -9,7 +11,10 @@ ROUNDS="${1:-2}"
 OLD="$(mktemp -d)/mini-serve-d1c9880"
 git -C "$ROOT" worktree add -q --detach "$OLD" d1c9880
 trap 'git -C "$ROOT" worktree remove --force "$OLD"' EXIT
-ln -s "$ROOT/weights" "$OLD/weights"
+sed -i '' 's/0 <= t < tok.get_vocab_size() for t in ids/0 <= t < 49152 for t in ids/' "$OLD/mini_serve/server.py"
+grep -q "0 <= t < 49152 for t in ids" "$OLD/mini_serve/server.py"
+mkdir -p "$OLD/weights"  # d1c9880 read the weights from weights/ in the checkout
+ln -s "$("$ROOT/scripts/fetch_weights.sh" 2>/dev/null)" "$OLD/weights/SmolLM2-135M"
 ln -s "$ROOT/.venv" "$OLD/.venv"
 cmake -S "$OLD" -B "$OLD/build" -DCMAKE_BUILD_TYPE=Release >/dev/null
 cmake --build "$OLD/build" -j >/dev/null
