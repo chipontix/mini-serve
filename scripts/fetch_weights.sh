@@ -8,7 +8,7 @@ SHA256=80521b40281d6ce74e35c9282c22539e75aa0ac8578892b2a59955ef78d55da1  # model
 DIR="$(cd "$(dirname "$0")/.." && pwd)/weights/SmolLM2-135M"
 mkdir -p "$DIR"
 for f in config.json tokenizer.json model.safetensors; do
-  [ -s "$DIR/$f" ] || curl -fL --retry 3 -o "$DIR/$f.part" "https://huggingface.co/$REPO/resolve/$REV/$f"
+  [ -s "$DIR/$f" ] || curl -fsSL --retry 3 -o "$DIR/$f.part" "https://huggingface.co/$REPO/resolve/$REV/$f"
   [ -f "$DIR/$f.part" ] && mv "$DIR/$f.part" "$DIR/$f"
 done
 echo "$SHA256  $DIR/model.safetensors" | shasum -a 256 -c -

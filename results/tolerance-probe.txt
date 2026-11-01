@@ -1,0 +1,4 @@
+correct, fp32 KV                   max |logit error| 1.26e-03   (largest |logit| 39.8)
+correct, fp16 KV                   max |logit error| 8.74e-03   (largest |logit| 39.8)
+bug: rms_norm_eps 1e-6, fp32 KV    max |logit error| 1.75e-02   (largest |logit| 39.8)
+bug: rope_theta +1%, fp32 KV       max |logit error| 1.34e-02   (largest |logit| 39.8)

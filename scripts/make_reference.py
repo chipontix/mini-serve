@@ -34,7 +34,7 @@ PROMPTS = [
 def main():
     torch.manual_seed(0)
     tok = tokenizers.Tokenizer.from_file(str(WEIGHTS / "tokenizer.json"))
-    model = AutoModelForCausalLM.from_pretrained(WEIGHTS, torch_dtype=torch.float16, attn_implementation="eager")
+    model = AutoModelForCausalLM.from_pretrained(WEIGHTS, dtype=torch.float16, attn_implementation="eager")
     model = model.float().eval()
     data = {}
     with torch.no_grad():
