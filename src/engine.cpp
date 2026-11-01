@@ -17,6 +17,7 @@
 #include <Accelerate/Accelerate.h>
 
 #include <algorithm>
+#include <chrono>
 
 #include <cmath>
 #include <cstdint>
@@ -42,8 +43,22 @@ struct Layer {
     std::unique_ptr<kvb::Buffer> k, v;  // [num_blocks][Hkv][page][D], fp16 or fp32
 };
 
+// Wall-clock seconds spent in forward(), and in its matmuls and attention calls, since the last
+// ms_profile() call. Attention time includes the CPU waiting for the GPU.
+struct Profile {
+    double total = 0, matmul = 0, attention = 0;
+};
+Profile g_prof;
+
+struct Timer {
+    double& acc;
+    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+    ~Timer() { acc += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(); }
+};
+
 // y[n][out] = x[n][in] * W[out][in]^T + beta * y
 void matmul(int n, int out, int in, const float* x, const float* w, float* y, float beta = 0.0f) {
+    Timer t{g_prof.matmul};
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, out, in, 1.0f, x, in, w, in, beta, y, out);
 }
 
@@ -151,6 +166,7 @@ struct Engine {
 
     void forward(int n, const int32_t* tokens, const int32_t* positions, const int32_t* tables,
                  int max_blocks, int n_out, const int32_t* out_rows, float* logits) {
+        Timer total{g_prof.total};
         if (loaded != expected_weights()) throw std::runtime_error("not all weights are loaded");
         if (n <= 0 || max_blocks <= 0 || n_out < 0) throw std::invalid_argument("bad sizes");
         const int D = c.head_dim, H = c.n_heads, E = c.hidden, P = c.page_size, QKV = qkv_dim();
@@ -205,7 +221,10 @@ struct Engine {
             else store_kv<float>(l, n, positions, tables, max_blocks);
             pa.k = l.k.get();
             pa.v = l.v.get();
-            kvb::run_paged(pa);  // waits for the GPU; out = [n][H][D]
+            {
+                Timer t{g_prof.attention};
+                kvb::run_paged(pa);  // waits for the GPU; out = [n][H][D]
+            }
             matmul(n, E, H * D, out->as<float>(), l.wo.data(), x.data(), 1.0f);  // x += attn · Wo^T
 
             for (int t = 0; t < n; ++t) rmsnorm(&x[size_t(t) * E], l.mlp_norm.data(), &h[size_t(t) * E], E, c.rms_eps);
@@ -262,6 +281,14 @@ int ms_forward(void* e, int n, const int32_t* tokens, const int32_t* positions, 
     return guarded([&] {
         static_cast<Engine*>(e)->forward(n, tokens, positions, block_tables, max_blocks, n_out, out_rows, logits);
     });
+}
+
+// Writes {total, matmul, attention} seconds since the last call and resets them.
+void ms_profile(double* out) {
+    out[0] = g_prof.total;
+    out[1] = g_prof.matmul;
+    out[2] = g_prof.attention;
+    g_prof = Profile{};
 }
 
 }  // extern "C"

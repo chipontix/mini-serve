@@ -198,7 +198,9 @@ def main():
         s = summarize(recs, reqs)
         s.update(experiment=experiment, config=cfg, rate=rate, num_blocks=num_blocks,
                  preemptions=stats["preemptions"], prefix_hit_blocks=stats["prefix_hit_blocks"],
-                 mean_decode_batch=stats["decode_rows"] / max(1, stats["decode_steps"]))
+                 mean_decode_batch=stats["decode_rows"] / max(1, stats["decode_steps"]),
+                 step_s=stats["step_s"], engine_s=stats["engine_s"], matmul_s=stats["matmul_s"],
+                 attention_s=stats["attention_s"], steps=stats["prefill_steps"] + stats["decode_steps"])
         rows.append(s)
         for i, r in enumerate(recs):
             req_rows.append({"experiment": experiment, "config": cfg, "rate": rate, "num_blocks": num_blocks,

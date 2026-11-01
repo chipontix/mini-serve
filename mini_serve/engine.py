@@ -60,6 +60,7 @@ class Runner:
         L.ms_destroy.argtypes = [ctypes.c_void_p]
         L.ms_last_error.restype = ctypes.c_char_p
         L.ms_set_weight.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_int64]
+        L.ms_profile.argtypes = [ctypes.c_void_p]
         L.ms_forward.argtypes = [ctypes.c_void_p, ctypes.c_int] + [ctypes.c_void_p] * 3 + \
                                 [ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p]
         c = Config(cfg["num_hidden_layers"], cfg["hidden_size"], cfg["num_attention_heads"],
@@ -82,6 +83,12 @@ class Runner:
         if getattr(self, "h", None):
             self.lib.ms_destroy(self.h)
             self.h = None
+
+    def profile(self):
+        """{total, matmul, attention} seconds in the engine since the last call."""
+        buf = (ctypes.c_double * 3)()
+        self.lib.ms_profile(buf)
+        return dict(zip(("total", "matmul", "attention"), buf))
 
     def forward(self, tokens, positions, tables, max_blocks, out_rows):
         """Logits [len(out_rows), vocab]; see ms_forward in src/engine.cpp."""
