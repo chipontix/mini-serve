@@ -10,7 +10,7 @@ build: ## configure and build libminiserve (fetches kv-cache-bench @ 1be44cd)
 	cmake -S . -B $(BUILD) -DCMAKE_BUILD_TYPE=Release
 	cmake --build $(BUILD) -j
 
-weights: ## download SmolLM2-135M (~270 MB, pinned revision, sha256-checked)
+weights: ## download SmolLM2-135M into the Hugging Face cache (~270 MB, pinned revision, sha256-checked)
 	./scripts/fetch_weights.sh
 
 $(PY): requirements.txt
@@ -29,7 +29,7 @@ mutation: setup ## inject known bugs into the block pool and scheduler, check th
 reference: weights ## regenerate tests/data/reference.npz with transformers on the CPU
 	uv venv -q --python 3.12 .venv-ref
 	uv pip install -q --python .venv-ref/bin/python -r requirements-ref.txt
-	.venv-ref/bin/python scripts/make_reference.py
+	.venv-ref/bin/python -m scripts.make_reference
 
 serve: build weights setup ## OpenAI-compatible server on :8000
 	$(PY) -m mini_serve.server

@@ -36,7 +36,8 @@ Apple silicon runner, Metal included. No performance number comes from CI.
 
 Requirements: macOS on Apple silicon, Xcode command line tools, CMake ≥ 3.28,
 [uv](https://docs.astral.sh/uv/) (Python 3.12 venv), network access for the first build (kv-cache-bench
-source, ~270 MB of weights).
+source; ~270 MB of weights, which `make weights` puts in the standard Hugging Face cache,
+`~/.cache/huggingface/hub`, or `$HF_HUB_CACHE`).
 
 ```bash
 make test        # build, download weights, venv; scheduler, HTTP and logit tests

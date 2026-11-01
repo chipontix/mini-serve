@@ -9,7 +9,10 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_WEIGHTS = ROOT / "weights" / "SmolLM2-135M"
+REVISION = "93efa2f097d58c2a74874c7e644dbc9b0cee75a2"  # same as scripts/fetch_weights.sh
+# The snapshot that scripts/fetch_weights.sh puts in the standard Hugging Face cache.
+DEFAULT_WEIGHTS = (Path(os.environ.get("HF_HUB_CACHE") or Path(os.environ.get("HF_HOME", "~/.cache/huggingface")) / "hub")
+                   .expanduser() / "models--HuggingFaceTB--SmolLM2-135M" / "snapshots" / REVISION)
 DEFAULT_LIB = ROOT / "build" / "libminiserve.dylib"
 
 

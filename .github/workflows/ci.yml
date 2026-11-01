@@ -17,8 +17,8 @@ jobs:
       - name: Weights cache
         uses: actions/cache@v4
         with:
-          path: weights
-          key: smollm2-135m-93efa2f
+          path: ~/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-135M
+          key: smollm2-135m-93efa2f-hfcache
       - name: Toolchain and GPU
         run: |
           c++ --version

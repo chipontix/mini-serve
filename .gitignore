@@ -1,6 +1,5 @@
 build/
 .venv/
 .venv-ref/
-weights/
 __pycache__/
 *.pyc

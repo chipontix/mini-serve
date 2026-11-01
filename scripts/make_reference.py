@@ -1,6 +1,7 @@
 """Reference logits from Hugging Face transformers on the CPU, for tests/test_logits.py.
 
     make reference   # .venv-ref with torch + transformers, writes tests/data/reference.npz
+    (runs as: .venv-ref/bin/python -m scripts.make_reference)
 
 The model is loaded in fp16 (the same rounding of the bf16 checkpoint as mini_serve.engine)
 and run in fp32 with eager attention. Stored per prompt: token ids, the full logits of the
@@ -17,8 +18,9 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM
 
+from mini_serve.engine import DEFAULT_WEIGHTS as WEIGHTS
+
 ROOT = Path(__file__).resolve().parent.parent
-WEIGHTS = ROOT / "weights" / "SmolLM2-135M"
 OUT = ROOT / "tests" / "data" / "reference.npz"
 TOPK, GEN = 20, 16
 
