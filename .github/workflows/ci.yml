@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Apple silicon runner. CI checks that everything builds and that the engine matches the
+    # reference; no performance number comes from CI (shared VM).
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Weights cache
+        uses: actions/cache@v4
+        with:
+          path: weights
+          key: smollm2-135m-93efa2f
+      - name: Toolchain and GPU
+        run: |
+          c++ --version
+          cmake --version
+          system_profiler SPDisplaysDataType || true
+      - name: Build and test
+        run: make test

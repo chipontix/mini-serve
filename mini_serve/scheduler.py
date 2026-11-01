@@ -82,6 +82,14 @@ class Scheduler:
             raise ValueError("empty prompt or max_tokens < 1")
         self.waiting.append(seq)
 
+    def abort(self, seq: Sequence):
+        """Drops a request (e.g. the client went away) and frees its blocks."""
+        if seq in self.waiting:
+            self.waiting.remove(seq)
+        elif seq in self.running:
+            self.running.remove(seq)
+            self._free(seq)
+
     def has_work(self):
         return bool(self.waiting or self.running)
 

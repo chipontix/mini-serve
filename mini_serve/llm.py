@@ -22,7 +22,7 @@ class LLM:
     def __init__(self, runner, scheduler):
         self.runner = runner
         self.scheduler = scheduler
-        self.steps = {"prefill": 0, "decode": 0}
+        self.stats = {"prefill_steps": 0, "decode_steps": 0, "prefill_rows": 0, "decode_rows": 0}
 
     def step(self):
         """Runs one step. Returns (batch, sampled tokens), or None if there is nothing to do."""
@@ -30,9 +30,12 @@ class LLM:
         if batch is None:
             return None
         seqs = [seq for seq, _, _ in batch.items]
-        next_tokens = self.runner.run(*build_inputs(batch), seqs)
+        inputs = build_inputs(batch)
+        next_tokens = self.runner.run(*inputs, seqs)
         self.scheduler.update(batch, next_tokens)
-        self.steps["prefill" if batch.prefill else "decode"] += 1
+        kind = "prefill" if batch.prefill else "decode"
+        self.stats[kind + "_steps"] += 1
+        self.stats[kind + "_rows"] += len(inputs[0])
         return batch, next_tokens
 
     def generate(self, seqs):
