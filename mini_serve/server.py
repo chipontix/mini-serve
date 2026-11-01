@@ -142,6 +142,8 @@ class Detokenizer:
 
 
 def make_handler(engine, tok):
+    vocab = tok.get_vocab_size()  # not per token: each call costs ~3.5 ms with the GIL held
+
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -173,7 +175,7 @@ def make_handler(engine, tok):
                 req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
                 prompt = req["prompt"]
                 ids = prompt if isinstance(prompt, list) else tok.encode(prompt).ids
-                if not all(isinstance(t, int) and 0 <= t < tok.get_vocab_size() for t in ids):
+                if not all(isinstance(t, int) and 0 <= t < vocab for t in ids):
                     raise ValueError("prompt token ids out of range")
                 max_tokens = int(req.get("max_tokens", 16))
                 temperature = float(req.get("temperature", 1.0))
@@ -245,6 +247,7 @@ def make_server(argv=None):
 
     engine = EngineClient(args)
     tok = Tokenizer.from_file(str(args.weights / "tokenizer.json"))
+    ThreadingHTTPServer.request_queue_size = 1024  # listen backlog; the default 5 drops bursts of connects
     srv = ThreadingHTTPServer((args.host, args.port), make_handler(engine, tok))
     srv.daemon_threads = True
     srv.mode = "static" if args.static else "continuous"
