@@ -1,5 +1,5 @@
 """Minimal OpenAI-compatible completions server: POST /v1/completions (with "stream": true as
-server-sent events) and GET /v1/models.
+server-sent events), GET /v1/models, and GET /metrics (Prometheus text format).
 
 The engine (scheduler + model) runs in its own process and steps back to back; the HTTP server
 runs in this one. They talk through two multiprocessing queues: requests and aborts go in,
@@ -28,6 +28,7 @@ from tokenizers import Tokenizer
 from .blocks import BlockPool
 from .engine import DEFAULT_WEIGHTS, Runner
 from .llm import LLM
+from .metrics import RequestMetrics, render
 from .scheduler import Scheduler, Sequence
 
 MODEL = "SmolLM2-135M"
@@ -64,7 +65,10 @@ def engine_main(args, inq, outq):
                     if (seq := live.pop(msg[1], None)) is not None:
                         sched.abort(seq)
                 else:
-                    outq.put(("stats", dict(llm.stats, preemptions=sched.preemptions, prefix_hit_blocks=pool.hits)))
+                    outq.put(("stats", dict(llm.stats, preemptions=sched.preemptions, prefix_hit_blocks=pool.hits,
+                                            running=len(sched.running), waiting=len(sched.waiting),
+                                            free_blocks=pool.num_free(), num_blocks=pool.num_blocks,
+                                            step_hist=llm.step_hist.snapshot())))
         except queue.Empty:
             pass
         out = llm.step()
@@ -89,6 +93,7 @@ class EngineClient:
         self.eos_id = msg[1]
         self.boxes = {}              # request id -> queue of tokens, then None (or an error string)
         self.stats_box = queue.Queue()
+        self.stats_lock = threading.Lock()  # one stats request in flight, so answers cannot cross
         self.ids = itertools.count()
         threading.Thread(target=self._dispatch, daemon=True).start()
 
@@ -103,8 +108,9 @@ class EngineClient:
         self.inq.put(("abort", sid))
 
     def stats(self):
-        self.inq.put(("stats",))
-        return self.stats_box.get(timeout=30)
+        with self.stats_lock:
+            self.inq.put(("stats",))
+            return self.stats_box.get(timeout=30)
 
     def _dispatch(self):
         while True:
@@ -143,6 +149,7 @@ class Detokenizer:
 
 def make_handler(engine, tok):
     vocab = tok.get_vocab_size()  # not per token: each call costs ~3.5 ms with the GIL held
+    metrics = RequestMetrics()
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -162,6 +169,14 @@ def make_handler(engine, tok):
             self._json(code, {"error": {"message": msg, "type": "invalid_request_error"}})
 
         def do_GET(self):
+            if self.path == "/metrics":
+                body = render(engine.stats(), metrics.snapshot()).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if self.path == "/stats":  # counters for the benchmark (not part of the OpenAI API)
                 return self._json(200, engine.stats())
             if self.path == "/v1/models":
@@ -171,6 +186,7 @@ def make_handler(engine, tok):
         def do_POST(self):
             if self.path != "/v1/completions":
                 return self._error(404, "not found")
+            t0 = time.perf_counter()
             try:
                 req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
                 prompt = req["prompt"]
@@ -182,6 +198,7 @@ def make_handler(engine, tok):
                 stream = bool(req.get("stream", False))
                 eos = -1 if req.get("ignore_eos", False) else engine.eos_id
             except (KeyError, ValueError, TypeError, json.JSONDecodeError) as e:
+                metrics.finished("bad_request")
                 return self._error(400, f"bad request: {e}")
 
             sid, box = engine.submit(list(ids), max_tokens, eos, temperature)
@@ -196,11 +213,21 @@ def make_handler(engine, tok):
 
             first = box.get()
             if isinstance(first, str):  # rejected by the scheduler
+                metrics.finished("rejected")
                 return self._error(400, first)
+            t_first = t_last = time.perf_counter()
+            n = 1
+
+            def done(outcome):
+                metrics.finished(outcome, len(ids), ttft=t_first - t0, e2e=t_last - t0,
+                                 tpot=(t_last - t_first) / (n - 1) if n > 1 else None)
+
             if not stream:
                 out = [first]
                 while (t := box.get()) is not None:
                     out.append(t)
+                    t_last, n = time.perf_counter(), n + 1
+                done("ok")
                 body = chunk(tok.decode(out), finish_reason(out[-1]))
                 body["usage"] = {"prompt_tokens": len(ids), "completion_tokens": len(out),
                                  "total_tokens": len(ids) + len(out)}
@@ -215,12 +242,16 @@ def make_handler(engine, tok):
                 detok, t = Detokenizer(tok), first
                 while t is not None:
                     nxt = box.get()
+                    if nxt is not None:
+                        t_last, n = time.perf_counter(), n + 1
                     self._sse(chunk(detok.push(t, final=nxt is None), finish_reason(t) if nxt is None else None))
                     t = nxt
                 self._sse("[DONE]")
                 self.wfile.write(b"0\r\n\r\n")
+                done("ok")
             except (BrokenPipeError, ConnectionResetError):
                 engine.abort(sid)
+                done("aborted")
 
         def _sse(self, obj):
             data = obj if isinstance(obj, str) else json.dumps(obj)

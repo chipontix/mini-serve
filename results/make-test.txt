@@ -1,4 +1,4 @@
-# make test, 2026-11-01 10:22
+# make test, 2026-11-02 10:06
 test_allocate_release_lru (tests.test_scheduler.BlockPoolTest.test_allocate_release_lru) ... ok
 test_disabled_cache_never_hits (tests.test_scheduler.BlockPoolTest.test_disabled_cache_never_hits) ... ok
 test_prefix_hit_and_eviction (tests.test_scheduler.BlockPoolTest.test_prefix_hit_and_eviction) ... ok
@@ -13,14 +13,15 @@ test_rejects_request_larger_than_pool (tests.test_scheduler.SchedulerTest.test_r
 test_shared_prefix_blocks_are_physically_shared (tests.test_scheduler.SchedulerTest.test_shared_prefix_blocks_are_physically_shared) ... ok
 test_static_batch_does_not_admit_until_done (tests.test_scheduler.SchedulerTest.test_static_batch_does_not_admit_until_done) ... ok
 test_static_matches_reference_without_cache (tests.test_scheduler.SchedulerTest.test_static_matches_reference_without_cache) ... ok
-test_concurrent_requests_match_sequential (tests.test_server.ServerTest.test_concurrent_requests_match_sequential) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59592), raddr=('127.0.0.1', 59591)>
-test_errors (tests.test_server.ServerTest.test_errors) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59611), raddr=('127.0.0.1', 59591)>
-test_stream_equals_non_stream (tests.test_server.ServerTest.test_stream_equals_non_stream) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59615), raddr=('127.0.0.1', 59591)>
-test_token_id_prompt (tests.test_server.ServerTest.test_token_id_prompt) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 59629), raddr=('127.0.0.1', 59591)>
+test_concurrent_requests_match_sequential (tests.test_server.ServerTest.test_concurrent_requests_match_sequential) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 57739), raddr=('127.0.0.1', 57738)>
+test_errors (tests.test_server.ServerTest.test_errors) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 57752), raddr=('127.0.0.1', 57738)>
+test_metrics_match_load_and_stats (tests.test_server.ServerTest.test_metrics_match_load_and_stats) ... /home/dev/mini-serve/tests/test_server.py:105: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 57756), raddr=('127.0.0.1', 57738)>
+test_stream_equals_non_stream (tests.test_server.ServerTest.test_stream_equals_non_stream) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 57763), raddr=('127.0.0.1', 57738)>
+test_token_id_prompt (tests.test_server.ServerTest.test_token_id_prompt) ... /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socket.py:791: ResourceWarning: unclosed <socket.socket fd=17, family=2, type=1, proto=6, laddr=('127.0.0.1', 57770), raddr=('127.0.0.1', 57738)>
 All 5 prompts through the scheduler together (one batched prefill, batched decode): ... ok
 Prefill half the prompt, then one token per call: the decode path of the kernel. ... ok
 test_prefill_all_positions (tests.test_logits.LogitsTest.test_prefill_all_positions) ... ok
-Ran 21 tests in 23.213s
+Ran 22 tests in 5.992s
 OK
   max |logit error| kv=f16 decode: 7.26e-03 (tolerance 3e-02)
   max |logit error| kv=f16 prefill: 8.74e-03 (tolerance 3e-02)

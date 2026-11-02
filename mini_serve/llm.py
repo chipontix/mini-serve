@@ -2,6 +2,8 @@
 
 import time
 
+from .metrics import STEP_BUCKETS, Histogram
+
 
 def build_inputs(batch):
     """Flattens a Batch into the runner's arguments: one row per token to compute, each with its
@@ -25,7 +27,8 @@ class LLM:
         self.runner = runner
         self.scheduler = scheduler
         self.stats = {"prefill_steps": 0, "decode_steps": 0, "prefill_rows": 0, "decode_rows": 0,
-                      "step_s": 0.0, "engine_s": 0.0, "matmul_s": 0.0, "attention_s": 0.0}
+                      "sampled_tokens": 0, "step_s": 0.0, "engine_s": 0.0, "matmul_s": 0.0, "attention_s": 0.0}
+        self.step_hist = Histogram(STEP_BUCKETS)
 
     def step(self):
         """Runs one step. Returns (batch, sampled tokens), or None if there is nothing to do."""
@@ -40,7 +43,10 @@ class LLM:
         kind = "prefill" if batch.prefill else "decode"
         self.stats[kind + "_steps"] += 1
         self.stats[kind + "_rows"] += len(inputs[0])
-        self.stats["step_s"] += time.perf_counter() - t0
+        self.stats["sampled_tokens"] += len(next_tokens)
+        dt = time.perf_counter() - t0
+        self.stats["step_s"] += dt
+        self.step_hist.observe(dt)
         if hasattr(self.runner, "profile"):
             for k, v in self.runner.profile().items():
                 self.stats[("engine" if k == "total" else k) + "_s"] += v

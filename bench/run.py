@@ -227,7 +227,7 @@ def main():
         finally:
             proc.terminate()
             proc.wait()
-        stats = {k: after[k] - before[k] for k in after}
+        stats = {k: after[k] - before[k] for k in after if isinstance(after[k], (int, float))}
         s = summarize(recs, reqs)
         s.update(experiment=experiment, config=cfg, rate=rate, num_blocks=num_blocks,
                  preemptions=stats["preemptions"], prefix_hit_blocks=stats["prefix_hit_blocks"],

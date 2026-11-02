@@ -2,6 +2,7 @@
 
 import http.client
 import json
+import re
 import threading
 import unittest
 
@@ -9,6 +10,29 @@ from tokenizers import Tokenizer
 
 from mini_serve.engine import DEFAULT_WEIGHTS
 from mini_serve.server import make_server
+
+
+SAMPLE = re.compile(r'^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})? (-?[0-9.e+-]+|\+Inf|NaN)$')
+
+
+def parse_metrics(text):
+    """Prometheus text format -> {(name, labels): value}; asserts every sample's family was
+    declared with # TYPE first and every line is well formed."""
+    types, out = {}, {}
+    for line in text.splitlines():
+        if line.startswith("# TYPE "):
+            _, _, name, kind = line.split()
+            types[name] = kind
+        elif line.startswith("# HELP ") or not line:
+            continue
+        else:
+            m = SAMPLE.match(line)
+            assert m, f"malformed line: {line!r}"
+            name, labels, value = m.groups()
+            family = re.sub(r"_(bucket|sum|count)$", "", name) if name not in types else name
+            assert family in types, f"no # TYPE for {name}"
+            out[(name, labels or "")] = float(value)
+    return out, types
 
 
 class ServerTest(unittest.TestCase):
@@ -70,6 +94,54 @@ class ServerTest(unittest.TestCase):
         for t in threads:
             t.join()
         self.assertEqual(together, alone)
+
+    def get(self, path):
+        c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        c.request("GET", path, headers={"Connection": "close"})
+        r = c.getresponse()
+        return r, r.read().decode()
+
+    def test_metrics_match_load_and_stats(self):
+        r, text = self.get("/metrics")
+        self.assertEqual(r.status, 200)
+        self.assertTrue(r.getheader("Content-Type").startswith("text/plain; version=0.0.4"))
+        before, _ = parse_metrics(text)
+
+        self.complete("The capital of France is", 8)
+        self.complete("def add(a, b):", 6)
+        self.stream("Привет, меня зовут", 5)
+        self.assertEqual(self.post({"max_tokens": 3}).status, 400)
+        prompt_tokens = sum(len(self.tok.encode(p).ids) for p in
+                            ["The capital of France is", "def add(a, b):", "Привет, меня зовут"])
+
+        after, types = parse_metrics(self.get("/metrics")[1])
+        stats = json.loads(self.get("/stats")[1])
+        d = lambda name, labels="": after[(name, labels)] - before[(name, labels)]
+        self.assertEqual(d("mini_serve_requests_total", '{outcome="ok"}'), 3)
+        self.assertEqual(d("mini_serve_requests_total", '{outcome="bad_request"}'), 1)
+        self.assertEqual(d("mini_serve_prompt_tokens_total"), prompt_tokens)
+        self.assertEqual(d("mini_serve_generation_tokens_total"), 8 + 6 + 5)
+        for h in ("time_to_first_token_seconds", "request_seconds", "time_per_output_token_seconds"):
+            self.assertEqual(d(f"mini_serve_{h}_count"), 3)
+        # Engine counters are the same numbers /stats reports (nothing ran in between).
+        self.assertEqual(after[("mini_serve_generation_tokens_total", "")], stats["sampled_tokens"])
+        self.assertEqual(after[("mini_serve_preemptions_total", "")], stats["preemptions"])
+        self.assertEqual(after[("mini_serve_prefix_cache_hit_blocks_total", "")], stats["prefix_hit_blocks"])
+        for kind in ("prefill", "decode"):
+            self.assertEqual(after[("mini_serve_steps_total", f'{{kind="{kind}"}}')], stats[f"{kind}_steps"])
+            self.assertEqual(after[("mini_serve_step_rows_total", f'{{kind="{kind}"}}')], stats[f"{kind}_rows"])
+        self.assertEqual(after[("mini_serve_step_seconds_count", "")], stats["prefill_steps"] + stats["decode_steps"])
+        # Idle server: nothing running or waiting, every block free.
+        self.assertEqual(after[("mini_serve_running_sequences", "")], 0)
+        self.assertEqual(after[("mini_serve_waiting_sequences", "")], 0)
+        self.assertEqual(after[("mini_serve_kv_blocks_free", "")], after[("mini_serve_kv_blocks_total", "")])
+        # Histogram buckets are cumulative and end at _count.
+        for name, kind in types.items():
+            if kind != "histogram":
+                continue
+            buckets = [v for (n, _), v in after.items() if n == name + "_bucket"]
+            self.assertEqual(buckets, sorted(buckets), name)
+            self.assertEqual(after[(name + "_bucket", '{le="+Inf"}')], after[(name + "_count", "")], name)
 
     def test_errors(self):
         self.assertEqual(self.post({"max_tokens": 3}).status, 400)                       # no prompt

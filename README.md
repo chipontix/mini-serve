@@ -27,6 +27,7 @@ llama.cpp, MLX or other servers.
 | Block pool, prefix sharing, preemption and both schedulers keep every sequence's KV history intact | `make test`, `tests/test_scheduler.py`: a fake model checks, for every computed token, that the block table resolves to exactly that sequence's tokens |
 | Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 11 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
 | The HTTP API streams the same text it returns without streaming, and concurrent requests get the same tokens as sequential ones | `make test`, `tests/test_server.py` |
+| `/metrics` is valid Prometheus text and counts what was served | `make test`, `test_metrics_match_load_and_stats`: deltas after a known load, and the same engine counters as `/stats` |
 | Continuous batching and the prefix cache vs a static batch, on one request stream | [Numbers](#numbers) (`make bench`) |
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `make test` on a GitHub `macos-15`
@@ -56,6 +57,31 @@ curl -N http://127.0.0.1:8000/v1/completions -H 'Content-Type: application/json'
 Request fields: `prompt` (string or token ids), `max_tokens`, `temperature` (0 = greedy), `stream`,
 and `ignore_eos` (an extension, as in vLLM: generate exactly `max_tokens`). `GET /stats` returns the
 engine's counters (steps, rows, preemptions, prefix hits, time split) for the benchmark.
+
+### Metrics
+
+`GET /metrics` serves Prometheus text format (0.0.4), written without a client library
+([`mini_serve/metrics.py`](mini_serve/metrics.py)). Engine-side numbers come from the engine
+process with each scrape; request latencies are measured in the HTTP process, from the moment the
+request is read to the first and last token handed to the client.
+
+| metric | type | what |
+|---|---|---|
+| `mini_serve_requests_total{outcome}` | counter | `ok`, `aborted` (client went away), `rejected` (does not fit the KV pool), `bad_request` |
+| `mini_serve_prompt_tokens_total`, `mini_serve_generation_tokens_total` | counter | prompt tokens accepted, tokens sampled |
+| `mini_serve_steps_total{kind}`, `mini_serve_step_rows_total{kind}` | counter | engine steps and token rows, `prefill` / `decode` |
+| `mini_serve_preemptions_total`, `mini_serve_prefix_cache_hit_blocks_total` | counter | sequences preempted, KV blocks reused from the prefix cache |
+| `mini_serve_engine_seconds_total{part}` | counter | time in the C++ forward pass (`forward`), and its `matmul` and `attention` parts |
+| `mini_serve_running_sequences`, `mini_serve_waiting_sequences` | gauge | batch and queue size |
+| `mini_serve_kv_blocks_free`, `mini_serve_kv_blocks_total` | gauge | KV pool occupancy |
+| `mini_serve_step_seconds` | histogram | wall time of one engine step |
+| `mini_serve_time_to_first_token_seconds`, `mini_serve_time_per_output_token_seconds`, `mini_serve_request_seconds` | histogram | TTFT, mean TPOT per request, end-to-end latency |
+
+```yaml
+scrape_configs:   # prometheus.yml
+  - job_name: mini-serve
+    static_configs: [{targets: ["127.0.0.1:8000"]}]
+```
 
 ## Architecture
 
