@@ -258,6 +258,46 @@ class SchedulerTest(unittest.TestCase):
             pass
         self.check_outputs(seqs)
 
+    def test_chunked_prefill_matches_reference(self):
+        """Every chunk size, with prefix hits and with preemption: same tokens as running alone."""
+        for chunk in (3, 5, 16):  # smaller chunks admit too slowly to run out of blocks
+            rng = random.Random(4)
+            pool, sched, llm = make(chunk_size=chunk)
+            seqs = workload(rng, 12)
+            llm.generate(seqs[:1])
+            llm.generate(seqs[1:])
+            self.check_outputs(seqs)
+            self.assertEqual(pool.hits, 11 * 2, f"chunk {chunk}")
+            assert_pool_clean(self, pool)
+            pool, sched, llm = make(num_blocks=12, page=4, chunk_size=chunk)
+            seqs = [Sequence([rng.randrange(VOCAB) for _ in range(rng.randrange(4, 12))],
+                             max_tokens=rng.randrange(8, 18)) for _ in range(8)]
+            llm.generate(seqs)
+            self.check_outputs(seqs)
+            self.assertGreater(sched.preemptions, 0, f"chunk {chunk}")
+            assert_pool_clean(self, pool)
+
+    def test_chunked_step_decodes_while_long_prompt_prefills(self):
+        pool, sched, llm = make(chunk_size=4)
+        a = Sequence([1, 2, 3], max_tokens=8)
+        sched.add(a)
+        llm.step()                                          # a's prompt: 3 tokens, first token sampled
+        b = Sequence(list(range(10, 20)), max_tokens=2)     # 10 tokens: 3 chunks of at most 3
+        sched.add(b)
+        chunks = []
+        while not b.output:
+            n_a = len(a.output)
+            batch, _ = llm.step()
+            self.assertLessEqual(sum(e - s for _, s, e in batch.items), 4)
+            self.assertEqual(batch.items[0], (a, len(a.tokens) - 2, len(a.tokens) - 1))  # decode first
+            self.assertEqual(len(a.output), n_a + 1)                                     # a never waits
+            chunks.append(batch.items[1][1:])
+        self.assertEqual(chunks, [(0, 3), (3, 6), (6, 9), (9, 10)])
+        while llm.step():
+            pass
+        self.check_outputs([a, b])
+        assert_pool_clean(self, pool)
+
     def test_rejects_request_larger_than_pool(self):
         _, sched, _ = make(num_blocks=2, page=4)
         with self.assertRaises(ValueError):

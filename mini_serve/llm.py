@@ -43,7 +43,7 @@ class LLM:
         kind = "prefill" if batch.prefill else "decode"
         self.stats[kind + "_steps"] += 1
         self.stats[kind + "_rows"] += len(inputs[0])
-        self.stats["sampled_tokens"] += len(next_tokens)
+        self.stats["sampled_tokens"] += sum(batch.sample)
         dt = time.perf_counter() - t0
         self.stats["step_s"] += dt
         self.step_hist.observe(dt)

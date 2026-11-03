@@ -25,7 +25,8 @@ llama.cpp, MLX or other servers.
 | The engine computes the same logits as Hugging Face transformers | `make test`, `tests/test_logits.py`: 5 prompts, every position, prefill and token-by-token decode, fp32 and fp16 KV cache, against `transformers` on the CPU ([tolerances](#correctness)) |
 | The tolerance would catch small real bugs | [`scripts/tolerance_probe.py`](scripts/tolerance_probe.py): an RMSNorm eps or RoPE theta off by a little gives 3–4× the fp32 tolerance |
 | Block pool, prefix sharing, preemption and both schedulers keep every sequence's KV history intact | `make test`, `tests/test_scheduler.py`: a fake model checks, for every computed token, that the block table resolves to exactly that sequence's tokens |
-| Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 11 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
+| Chunked prefill (off by default) gives the same logits as prefilling the prompt in one chunk | `make test`, `test_chunked_prefill_matches_one_chunk`: 5 prompts in 7-token chunks mixed with other sequences' decodes, fp32 KV cache; logits of every sampled token within 1e-3 of the one-chunk run (observed 1.01e-4, [`results/make-test.txt`](results/make-test.txt)) and identical greedy tokens. Fake-model scheduler tests at chunk sizes 3, 5, 16 with prefix hits and preemption; the HTTP tests again with `--chunked-prefill 4` |
+| Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 14 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, a partial prefill chunk that samples a token, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
 | The HTTP API streams the same text it returns without streaming, and concurrent requests get the same tokens as sequential ones | `make test`, `tests/test_server.py` |
 | `/metrics` is valid Prometheus text and counts what was served | `make test`, `test_metrics_match_load_and_stats`: deltas after a known load, and the same engine counters as `/stats` |
 | Continuous batching and the prefix cache vs a static batch, on one request stream | [Numbers](#numbers) (`make bench`) |
@@ -43,7 +44,7 @@ source; ~270 MB of weights, which `make weights` puts in the standard Hugging Fa
 ```bash
 make test        # build, download weights, venv; scheduler, HTTP and logit tests
 make serve       # http://127.0.0.1:8000
-make mutation    # inject 11 bugs into pool/scheduler, check the tests catch each
+make mutation    # inject 14 bugs into pool/scheduler, check the tests catch each
 make bench LABEL=mine    # static vs continuous vs continuous+prefix, writes results/mine/
 python3 scripts/tables.py mine    # the README tables from results/mine/summary.csv
 make reference   # regenerate tests/data/reference.npz (needs torch + transformers, own venv)
@@ -55,7 +56,9 @@ curl -N http://127.0.0.1:8000/v1/completions -H 'Content-Type: application/json'
 ```
 
 Request fields: `prompt` (string or token ids), `max_tokens`, `temperature` (0 = greedy), `stream`,
-and `ignore_eos` (an extension, as in vLLM: generate exactly `max_tokens`). `GET /stats` returns the
+and `ignore_eos` (an extension, as in vLLM: generate exactly `max_tokens`). Server flags:
+`python -m mini_serve.server --help` (pool size, `--static`, `--no-prefix-cache`,
+`--chunked-prefill N`). `GET /stats` returns the
 engine's counters (steps, rows, preemptions, prefix hits, time split) for the benchmark.
 
 ### Metrics
@@ -147,10 +150,17 @@ still be hit until they are reused.
 **Continuous scheduler.** Between steps, waiting requests are admitted first-come-first-served while
 the pool has blocks for their uncached tokens and a prefill budget (2048 tokens per step) allows.
 If anything was admitted, the step prefills only those; otherwise it decodes all running sequences.
-Prefill and decode are never mixed in one step. A finished sequence frees its blocks immediately.
+Prefill and decode are not mixed in one step, unless chunked prefill is on. A finished sequence frees its blocks immediately.
 When a decoding sequence needs a new block and the pool is empty, the most recently admitted
 sequence is preempted: its blocks are freed and it goes back to the front of the queue, to be
 recomputed later from its prompt plus the tokens generated so far.
+
+**Chunked prefill (`--chunked-prefill N`, off by default).** A step computes at most `N` tokens and
+mixes decode with prefill: every decoding sequence gets its one token first, then sequences still in
+prefill get the next chunk of their prompt, then waiting requests are admitted with the budget left.
+A chunk that stops short of the prompt's last token samples nothing; its K/V are in the cache, and
+the next chunk attends to them like a prefix-cache hit. So a long prompt costs running sequences a
+smaller step instead of a whole prefill step.
 
 **Static baseline.** When nothing is running, take up to `max_num_seqs` waiting requests, reserve
 all blocks they could need (prompt + `max_tokens`), prefill them together and decode until the last
@@ -215,8 +225,9 @@ none of the draft runs made while developing (on a machine at load average 40–
   differently and the GPU would run them.
 - Matmuls run on the CPU (Accelerate, fp32 from fp16-rounded weights). Each layer waits for the GPU
   once (`kvb::run_paged` commits and waits), i.e. 30 CPU↔GPU round trips per step.
-- Prefill and decode are never mixed in a step (no chunked prefill): a long prefill delays every
-  running sequence's next token.
+- Without `--chunked-prefill` (the default) prefill and decode are never mixed in a step: a long
+  prefill delays every running sequence's next token. Chunked prefill is tested for correctness
+  only; `make bench` does not run it, and its effect on TTFT and TPOT is not measured.
 - Preemption only recomputes; no swapping to CPU memory. Victim choice is "most recently admitted".
 - Prefix sharing is per full block of 16 tokens; a shared prefix that ends mid-block shares only its
   full blocks. Hashes are Python `hash` of token tuples, chained; collisions are not checked.

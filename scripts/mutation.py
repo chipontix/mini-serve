@@ -1,5 +1,6 @@
 """Injects known bugs into the block pool and the scheduler, one at a time, and checks that
-tests/test_scheduler.py fails for each. Writes results/mutation.txt.
+tests/test_scheduler.py (or the test named with the mutation) fails for each. Writes
+results/mutation.txt.
 
     .venv/bin/python scripts/mutation.py
 """
@@ -10,7 +11,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MUTATIONS = [  # (file, original, replacement, what the bug is)
+LOGITS_CHUNKED = "tests.test_logits.LogitsTest.test_chunked_prefill_matches_one_chunk"  # needs GPU + weights
+MUTATIONS = [  # (file, original, replacement, what the bug is[, test to run])
     ("mini_serve/scheduler.py", "[:(len(tokens) - 1) // P]", "[:len(tokens) // P]",
      "fully cached prompt: no token left to compute"),
     ("mini_serve/scheduler.py", "if self.pool.num_free():", "if True:",
@@ -33,26 +35,32 @@ MUTATIONS = [  # (file, original, replacement, what the bug is)
      "block hash not chained to the prefix"),
     ("mini_serve/blocks.py", "self.free[b] = None  # most recently freed: evicted last", "self.free[b] = None; self.free.move_to_end(b, last=False)",
      "free list evicts the most recently freed block first"),
+    ("mini_serve/scheduler.py", "key=lambda s: left(s) > 1)", "key=lambda s: left(s) == 1)",
+     "chunked step: prefill chunks before decodes"),
+    ("mini_serve/scheduler.py", "            n = min(n, budget)\n", "",
+     "chunked admission ignores the step budget"),
+    ("mini_serve/scheduler.py", "            if not sample:", "            if False:",
+     "partial prefill chunk samples a token (real model)", LOGITS_CHUNKED),
 ]
 
 
-def run_tests():
-    r = subprocess.run([sys.executable, "-m", "unittest", "tests.test_scheduler"], cwd=ROOT,
+def run_tests(test="tests.test_scheduler"):
+    r = subprocess.run([sys.executable, "-m", "unittest", test], cwd=ROOT,
                        capture_output=True, text=True)
     return r.returncode == 0, r.stderr.strip().splitlines()[-1]
 
 
 def main():
-    ok, _ = run_tests()
-    assert ok, "tests must pass before mutating"
+    for test in {m[4] for m in MUTATIONS if len(m) > 4} | {"tests.test_scheduler"}:
+        assert run_tests(test)[0], f"{test} must pass before mutating"
     lines, missed = [], 0
-    for path, old, new, what in MUTATIONS:
+    for path, old, new, what, *test in MUTATIONS:
         f = ROOT / path
         backup = f.read_text()
         assert backup.count(old) == 1, f"mutation does not apply: {what}"
         try:
             f.write_text(backup.replace(old, new))
-            passed, summary = run_tests()
+            passed, summary = run_tests(*test)
         finally:
             f.write_text(backup)
         missed += passed

@@ -23,7 +23,7 @@ setup: $(PY) ## Python venv: numpy, tokenizers
 test: build weights setup ## scheduler and block pool tests, then logits vs transformers
 	$(PY) -m unittest -v tests.test_scheduler tests.test_server tests.test_logits
 
-mutation: setup ## inject known bugs into the block pool and scheduler, check the tests catch each
+mutation: build weights setup ## inject known bugs into the block pool and scheduler, check the tests catch each
 	$(PY) scripts/mutation.py
 
 reference: weights ## regenerate tests/data/reference.npz with transformers on the CPU

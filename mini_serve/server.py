@@ -8,7 +8,7 @@ queues read by the handler threads. With both in one process, the handler thread
 and writing tokens) and the engine loop competed for the GIL, and a third to a half of each
 step's time was spent outside the forward pass (README, "What I learned").
 
-    python -m mini_serve.server --port 8000 [--static] [--no-prefix-cache] [--num-blocks N]
+    python -m mini_serve.server --port 8000 [--static] [--no-prefix-cache] [--chunked-prefill N] [--num-blocks N]
 """
 
 import argparse
@@ -40,7 +40,7 @@ def engine_main(args, inq, outq):
     ("error", id, message) for a rejected request, ("stats", dict)."""
     pool = BlockPool(args.num_blocks, args.page_size, prefix_cache=not (args.static or args.no_prefix_cache))
     sched = Scheduler(pool, max_num_seqs=args.max_num_seqs, max_prefill_tokens=args.max_prefill_tokens,
-                      static=args.static)
+                      static=args.static, chunk_size=args.chunked_prefill)
     llm = LLM(Runner(args.num_blocks, args.page_size, weights=args.weights), sched)
     outq.put(("ready", llm.runner.eos_id))
     live = {}
@@ -74,7 +74,8 @@ def engine_main(args, inq, outq):
         out = llm.step()
         if out is not None:
             batch, tokens = out
-            outq.put(("tokens", [(seq.id, tok, seq.finished) for (seq, _, _), tok in zip(batch.items, tokens)]))
+            outq.put(("tokens", [(seq.id, tok, seq.finished) for (seq, _, _), tok, sampled
+                                 in zip(batch.items, tokens, batch.sample) if sampled]))
             for seq, _, _ in batch.items:
                 if seq.finished:
                     live.pop(seq.id, None)
@@ -274,6 +275,8 @@ def make_server(argv=None):
     ap.add_argument("--max-prefill-tokens", type=int, default=2048)
     ap.add_argument("--static", action="store_true", help="baseline: static batches, no prefix cache")
     ap.add_argument("--no-prefix-cache", action="store_true")
+    ap.add_argument("--chunked-prefill", type=int, metavar="N",
+                    help="mix decode and prefill chunks, at most N tokens per step (off by default)")
     args = ap.parse_args(argv)
 
     engine = EngineClient(args)

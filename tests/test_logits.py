@@ -17,6 +17,10 @@ N_PROMPTS = 5
 PAGE = 16
 # Max |engine - reference| over the compared logits. See README, "Correctness".
 TOL = {"f32": 5e-3, "f16": 3e-2}
+# Chunked vs one-chunk prefill, both with an fp32 KV cache. The same K/V reach the kernel either
+# way; Accelerate's GEMMs sum in a different order for a different row count (observed ~1e-4).
+# The smallest greedy top-2 margin on these prompts is 3e-2, so outputs must match exactly too.
+CHUNK_TOL = 1e-3
 
 
 def runner(kv):
@@ -90,10 +94,42 @@ class LogitsTest(unittest.TestCase):
             n = next((j for j, m in enumerate(margin) if m <= 2 * TOL["f16"]), len(ref))
             self.assertEqual(out[:n], ref[:n], f"prompt {i}")
 
+    def test_chunked_prefill_matches_one_chunk(self):
+        """The 5 prompts through the scheduler with chunked prefill (7 tokens per step: chunks
+        that cut pages and prompts mid-way, mixed with other sequences' decodes) against the same
+        prompts prefilled in one chunk: the logits of every sampled token and the greedy outputs."""
+        results = {}
+        for chunk in (None, 7):
+            r = runner("f32")
+            logits = {}
+            run = r.run
+
+            def recording_run(tokens, positions, tables, max_blocks, out_rows, seqs):
+                out = run(tokens, positions, tables, max_blocks, out_rows, seqs)
+                rows = r.last_logits
+                for i, (seq, row) in enumerate(zip(seqs, out_rows)):
+                    if positions[row] == len(seq.tokens) - 1:   # the sampled row, not a partial chunk
+                        logits.setdefault(seq.id, []).append(rows[i])
+                return out
+
+            r.run = recording_run
+            llm = LLM(r, Scheduler(BlockPool(64, PAGE), chunk_size=chunk))
+            seqs = [Sequence(REF[f"ids{i}"].tolist(), max_tokens=8, id=i) for i in range(N_PROMPTS)]
+            outs = llm.generate(seqs)
+            results[chunk] = outs, {i: np.stack(v) for i, v in logits.items()}
+            if chunk:
+                self.assertGreater(llm.stats["prefill_steps"], 3)
+        (outs1, logits1), (outsc, logitsc) = results[None], results[7]
+        self.assertEqual(outsc, outs1)
+        err = max(np.abs(logitsc[i] - logits1[i]).max() for i in range(N_PROMPTS))
+        self.worst[("f32", "chunked vs one chunk")] = float(err)
+        self.assertLessEqual(err, CHUNK_TOL)
+
     @classmethod
     def tearDownClass(cls):
         for (kv, label), err in sorted(cls.worst.items()):
-            print(f"  max |logit error| kv={kv} {label}: {err:.2e} (tolerance {TOL[kv]:.0e})")
+            tol = CHUNK_TOL if label.startswith("chunked") else TOL[kv]
+            print(f"  max |logit error| kv={kv} {label}: {err:.2e} (tolerance {tol:.0e})")
 
 
 if __name__ == "__main__":

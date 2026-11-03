@@ -18,6 +18,13 @@ Continuous policy (`static=False`):
   * Finished sequences free their blocks at once, so their slots go to waiting requests on the
     next step.
 
+Chunked prefill (`chunk_size=N`, continuous only; off by default): one step computes at most N
+tokens and mixes decode with prefill. Running sequences that decode get their one token first,
+then sequences still in prefill get the next chunk of their prompt, then waiting requests are
+admitted with whatever budget is left (all their blocks are taken at admission, as above). A
+chunk that stops before the sequence's last token samples nothing. So a long prompt no longer
+holds every running sequence back for a whole prefill step.
+
 Static policy (`static=True`), the baseline: when nothing is running, take up to max_num_seqs
 waiting requests, reserve every block they could need (prompt + max_tokens), prefill them
 together and decode until the last one finishes. New requests wait for the whole batch. No
@@ -62,14 +69,21 @@ class Sequence:
 class Batch:
     items: list   # (seq, start, end): compute seq.tokens[start:end]
     prefill: bool
+    sample: list = field(init=False)  # per item: it reaches the sequence's last token, so a token is sampled
+
+    def __post_init__(self):
+        self.sample = [end == len(seq.tokens) for seq, _, end in self.items]
 
 
 class Scheduler:
-    def __init__(self, pool: BlockPool, max_num_seqs=64, max_prefill_tokens=2048, static=False):
+    def __init__(self, pool: BlockPool, max_num_seqs=64, max_prefill_tokens=2048, static=False, chunk_size=None):
+        assert not (static and chunk_size), "chunked prefill is a continuous-batching policy"
+        assert chunk_size is None or chunk_size >= 1
         self.pool = pool
         self.max_num_seqs = max_num_seqs
         self.max_prefill_tokens = max_prefill_tokens
         self.static = static
+        self.chunk_size = chunk_size
         self.waiting = deque()
         self.running = []          # admission order: the last one is preempted first
         self.preemptions = 0
@@ -136,6 +150,8 @@ class Scheduler:
         """The next step's batch, or None if there is nothing to run."""
         if self.static and self.running:
             return self._decode()
+        if self.chunk_size:
+            return self._schedule_chunked()
         admitted = []
         budget = float("inf") if self.static else self.max_prefill_tokens
         while self.waiting and len(self.running) < self.max_num_seqs:
@@ -152,7 +168,38 @@ class Scheduler:
             return Batch([(s, s.num_computed, len(s.tokens)) for s in admitted], prefill=True)
         return self._decode() if self.running else None
 
+    def _schedule_chunked(self):
+        self._grow()
+        budget, items, prefill = self.chunk_size, [], False
+        left = lambda s: len(s.tokens) - s.num_computed
+        # Decodes first, so a long prompt never delays a running sequence's next token.
+        for seq in sorted(self.running, key=lambda s: left(s) > 1):
+            n = min(left(seq), budget)
+            if n:
+                items.append((seq, seq.num_computed, seq.num_computed + n))
+                budget -= n
+                prefill |= left(seq) > 1
+        while budget and self.waiting and len(self.running) < self.max_num_seqs:
+            seq = self.waiting[0]
+            n = self._admit(seq, float("inf"))
+            if n is None:
+                break
+            self.waiting.popleft()
+            self.running.append(seq)
+            n = min(n, budget)
+            items.append((seq, seq.num_computed, seq.num_computed + n))
+            budget -= n
+            prefill = True
+        return Batch(items, prefill=prefill) if items else None
+
     def _decode(self):
+        self._grow()
+        if not self.running:
+            return None
+        return Batch([(s, s.num_computed, len(s.tokens)) for s in self.running], prefill=False)
+
+    def _grow(self):
+        """Gives every running sequence a block for its next token, preempting if the pool is empty."""
         P = self.pool.page_size
         for seq in list(self.running):
             if seq not in self.running:   # preempted earlier in this loop
@@ -165,9 +212,6 @@ class Scheduler:
                     self._preempt(victim)
                     if victim is seq:
                         break
-        if not self.running:
-            return None
-        return Batch([(s, s.num_computed, len(s.tokens)) for s in self.running], prefill=False)
 
     # ------------------------------------------------------------------------------ update
 
@@ -176,7 +220,7 @@ class Scheduler:
         now = time.perf_counter() if now is None else now
         P = self.pool.page_size
         done = []
-        for (seq, _, end), tok in zip(batch.items, next_tokens):
+        for (seq, _, end), tok, sample in zip(batch.items, next_tokens, batch.sample):
             seq.num_computed = end
             # Register blocks that just became full, so later requests can share them.
             new = block_hashes(seq.tokens[:end], P, start=len(seq.hashes),
@@ -185,6 +229,8 @@ class Scheduler:
                 if not self.static:
                     self.pool.register(seq.blocks[i], h)
             seq.hashes += new
+            if not sample:   # a prefill chunk short of the last token: its logits are not used
+                continue
             seq.output.append(int(tok))
             if seq.first_token_time is None:
                 seq.first_token_time = now

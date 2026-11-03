@@ -36,9 +36,11 @@ def parse_metrics(text):
 
 
 class ServerTest(unittest.TestCase):
+    FLAGS = []
+
     @classmethod
     def setUpClass(cls):
-        cls.srv = make_server(["--port", "0", "--num-blocks", "64"])
+        cls.srv = make_server(["--port", "0", "--num-blocks", "64"] + cls.FLAGS)
         cls.port = cls.srv.server_address[1]
         threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
         cls.tok = Tokenizer.from_file(str(DEFAULT_WEIGHTS / "tokenizer.json"))
@@ -150,6 +152,11 @@ class ServerTest(unittest.TestCase):
         c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
         c.request("GET", "/v1/models", headers={"Connection": "close"})
         self.assertEqual(json.loads(c.getresponse().read())["data"][0]["id"], "SmolLM2-135M")
+
+
+class ChunkedPrefillServerTest(ServerTest):
+    """The same API tests with prompts split into 4-token chunks: partial chunks must send nothing."""
+    FLAGS = ["--chunked-prefill", "4"]
 
 
 if __name__ == "__main__":

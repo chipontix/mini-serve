@@ -103,7 +103,7 @@ class Runner:
         return logits
 
     def run(self, tokens, positions, tables, max_blocks, out_rows, seqs):
-        logits = self.forward(tokens, positions, tables, max_blocks, out_rows)
+        logits = self.last_logits = self.forward(tokens, positions, tables, max_blocks, out_rows)
         out = logits.argmax(axis=1).tolist()  # greedy for all rows in one call
         for i, seq in enumerate(seqs):
             if seq.temperature > 0:
