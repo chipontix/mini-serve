@@ -216,7 +216,7 @@ none of the draft runs made while developing (on a busy machine, with other jobs
    the GIL (ctypes), but after every step the engine thread had to get it back from threads busy
    decoding and writing tokens, and in draft runs a large share of each step was spent outside the
    C++ forward pass, against a few percent for the same steps run offline. The engine now runs in
-   its own process. The A/B ([`scripts/gil_ab.sh`](scripts/gil_ab.sh), commit `d1c9880` vs this one)
+   its own process. The A/B ([`scripts/gil_ab.sh`](scripts/gil_ab.sh), commit `dae6341` vs this one)
    is pending the quiet-machine run.
 2. **Requests that arrive in the same step do not share their prefix.** Blocks are registered in
    the cache after the step that computed them, so a burst of requests with the same system prompt

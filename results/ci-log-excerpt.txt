@@ -1,4 +1,4 @@
-# GitHub Actions run 41816607181 (commit 636f7a6), macos-15 runner, step 'Build and test'
+# GitHub Actions run 41816607181 (commit 636f7a6 before a history rewrite, now 41b63b8), macos-15 runner, step 'Build and test'
 test	Build and test	2026-11-04T10:48:40.5116860Z /Users/runner/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/model.safetensors: OK
 test	Build and test	2026-11-04T10:50:19.3054480Z Ran 34 tests in 97.696s
 test	Build and test	2026-11-04T10:50:19.3056560Z OK
