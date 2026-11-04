@@ -1,8 +1,13 @@
-# GitHub Actions run 41284318327 (commit e27ce70), macos-15 runner, step 'Build and test'
-test	Build and test	2026-11-01T07:19:46.8907940Z /Users/runner/work/mini-serve/mini-serve/weights/SmolLM2-135M/model.safetensors: OK
-test	Build and test	2026-11-01T07:20:39.5238770Z Ran 20 tests in 51.334s
-test	Build and test	2026-11-01T07:20:39.5238980Z OK
-test	Build and test	2026-11-01T07:20:39.5392480Z   max |logit error| kv=f16 decode: 7.18e-03 (tolerance 3e-02)
-test	Build and test	2026-11-01T07:20:39.5393030Z   max |logit error| kv=f16 prefill: 1.17e-02 (tolerance 3e-02)
-test	Build and test	2026-11-01T07:20:39.5393370Z   max |logit error| kv=f32 decode: 1.68e-04 (tolerance 5e-03)
-test	Build and test	2026-11-01T07:20:39.5393650Z   max |logit error| kv=f32 prefill: 2.16e-03 (tolerance 5e-03)
+# GitHub Actions run 41816607181 (commit 636f7a6), macos-15 runner, step 'Build and test'
+test	Build and test	2026-11-04T10:48:40.5116860Z /Users/runner/.cache/huggingface/hub/models--HuggingFaceTB--SmolLM2-135M/snapshots/93efa2f097d58c2a74874c7e644dbc9b0cee75a2/model.safetensors: OK
+test	Build and test	2026-11-04T10:50:19.3054480Z Ran 34 tests in 97.696s
+test	Build and test	2026-11-04T10:50:19.3056560Z OK
+test	Build and test	2026-11-04T10:50:19.3296330Z   max |logit error| kv=f16 batch composition: 3.00e-02 (tolerance 6e-02)
+test	Build and test	2026-11-04T10:50:19.3296890Z   max |logit error| kv=f16 decode: 7.18e-03 (tolerance 3e-02)
+test	Build and test	2026-11-04T10:50:19.3297780Z   max |logit error| kv=f16 prefill: 1.17e-02 (tolerance 3e-02)
+test	Build and test	2026-11-04T10:50:19.3298230Z   max |logit error| kv=f32 batch composition: 3.23e-04 (tolerance 2e-03)
+test	Build and test	2026-11-04T10:50:19.3298650Z   max |logit error| kv=f32 chunked vs one chunk: 1.73e-04 (tolerance 1e-03)
+test	Build and test	2026-11-04T10:50:19.3299080Z   max |logit error| kv=f32 decode: 1.68e-04 (tolerance 5e-03)
+test	Build and test	2026-11-04T10:50:19.3299450Z   max |logit error| kv=f32 prefill: 2.16e-03 (tolerance 5e-03)
+test	Build and test	2026-11-04T10:50:19.3299800Z   greedy tokens compared across batch compositions, kv=f16: 195 of 360
+test	Build and test	2026-11-04T10:50:19.3300240Z   greedy tokens compared across batch compositions, kv=f32: 360 of 360

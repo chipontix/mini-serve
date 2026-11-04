@@ -1,0 +1,3 @@
+# .venv/bin/python -c "from bench.run import SYSTEM, QUESTIONS; from tokenizers import Tokenizer; from mini_serve.engine import DEFAULT_WEIGHTS; t = Tokenizer.from_file(str(DEFAULT_WEIGHTS / \"tokenizer.json\")); L = [len(t.encode(SYSTEM + \"Customer: \" + q + \"\nAssistant:\").ids) for q in QUESTIONS]; print(\"system prompt tokens\", len(t.encode(SYSTEM).ids)); print(\"full prompt tokens min\", min(L), \"max\", max(L), \"over\", len(L), \"questions\")"
+system prompt tokens 192
+full prompt tokens min 205 max 212 over 16 questions

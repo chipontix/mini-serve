@@ -23,11 +23,11 @@ llama.cpp, MLX or other servers.
 | Claim | Evidence |
 |---|---|
 | The engine computes the same logits as Hugging Face transformers | `make test`, `tests/test_logits.py`: 5 prompts, every position, prefill and token-by-token decode, fp32 and fp16 KV cache, against `transformers` on the CPU ([tolerances](#correctness)) |
-| The tolerance would catch small real bugs | [`scripts/tolerance_probe.py`](scripts/tolerance_probe.py): an RMSNorm eps or RoPE theta off by a little gives 3–4× the fp32 tolerance |
+| The tolerance would catch small real bugs | [`scripts/tolerance_probe.py`](scripts/tolerance_probe.py): an RMSNorm eps or RoPE theta off by a little gives 2.7–3.5× the fp32 tolerance ([`results/tolerance-probe.txt`](results/tolerance-probe.txt)) |
 | Block pool, prefix sharing, preemption and both schedulers keep every sequence's KV history intact | `make test`, `tests/test_scheduler.py`: a fake model checks, for every computed token, that the block table resolves to exactly that sequence's tokens |
-| Chunked prefill (off by default) gives the same logits as prefilling the prompt in one chunk | `make test`, `test_chunked_prefill_matches_one_chunk`: 5 prompts in 7-token chunks mixed with other sequences' decodes, fp32 KV cache; logits of every sampled token within 1e-3 of the one-chunk run (observed 1.01e-4, [`results/make-test.txt`](results/make-test.txt)) and identical greedy tokens. Fake-model scheduler tests at chunk sizes 3, 5, 16 with prefix hits and preemption; the HTTP tests again with `--chunked-prefill 4` |
+| Chunked prefill (off by default) gives the same logits as prefilling the prompt in one chunk | `make test`, `test_chunked_prefill_matches_one_chunk`: 5 prompts in 7-token chunks mixed with other sequences' decodes, fp32 KV cache; logits of every sampled token within 1e-3 of the one-chunk run (observed 1.01e-4 on this Mac, 1.73e-4 on the CI runner: [`results/make-test.txt`](results/make-test.txt), [`results/ci-log-excerpt.txt`](results/ci-log-excerpt.txt)) and identical greedy tokens. Fake-model scheduler tests at chunk sizes 3, 5, 16 with prefix hits and preemption; the HTTP tests again with `--chunked-prefill 4` |
 | Under any interleaving of arrivals, aborts and steps, the pool and scheduler stay consistent | `make test`, `SchedulerPropertyTest`: 300 random pools and policies (static, continuous, chunked, with and without prefix cache), requests added and aborted between any two steps; after every step, refcounts equal the tables holding each block, the free list is exactly the unheld blocks, shared blocks are registered full prefix blocks nobody writes, budgets hold, work never stalls; in the end every request not aborted has the tokens it gets alone and the pool is empty. The cases include preemptions, prefix hits, and aborts of running and of queued requests |
-| A greedy sequence gets the same tokens whatever else is in its batch | `make test`, `test_greedy_is_independent_of_batch_composition`: the 5 prompts alone, together, joining one by one mid-decode, and that with chunked prefill. The same batch twice is bit-identical. A different batch moves the logits by summation order: up to 4.76e-4 with the fp32 cache (bound 2e-3), 2.48e-2 with the fp16 cache (bound 6e-2) ([`results/make-test.txt`](results/make-test.txt)); greedy tokens are compared up to the first near tie: 360 of 360 with fp32, 195 of 360 with fp16, all equal |
+| A greedy sequence gets the same tokens whatever else is in its batch | `make test`, `test_greedy_is_independent_of_batch_composition`: the 5 prompts alone, together, joining one by one mid-decode, and that with chunked prefill. The same batch twice is bit-identical. A different batch moves the logits by summation order: with the fp32 cache up to 4.76e-4 on this Mac and 3.23e-4 on the CI runner (bound 2e-3), with the fp16 cache up to 2.48e-2 and 3.00e-2 (bound 6e-2) ([`results/make-test.txt`](results/make-test.txt), [`results/ci-log-excerpt.txt`](results/ci-log-excerpt.txt)); greedy tokens are compared up to the first near tie: 360 of 360 with fp32, 195 of 360 with fp16, all equal |
 | A client that goes away stops its request and frees its blocks | `make test`, `test_client_disconnect_frees_blocks`: a client leaves mid-stream, one while its request is queued, one mid non-streaming request; each time the engine drops the request (`aborted` in `/metrics`) and every block is free again, long before the 900 tokens asked for |
 | Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 15 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, a partial prefill chunk that samples a token, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
 | The HTTP API streams the same text it returns without streaming, and concurrent requests get the same tokens as sequential ones | `make test`, `tests/test_server.py` |
@@ -75,7 +75,7 @@ request is read to the first and last token handed to the client.
 |---|---|---|
 | `mini_serve_requests_total{outcome}` | counter | `ok`, `aborted` (client went away), `rejected` (does not fit the KV pool), `bad_request` |
 | `mini_serve_prompt_tokens_total`, `mini_serve_generation_tokens_total` | counter | prompt tokens accepted, tokens sampled |
-| `mini_serve_steps_total{kind}`, `mini_serve_step_rows_total{kind}` | counter | engine steps and token rows, `prefill` / `decode` |
+| `mini_serve_steps_total{kind}`, `mini_serve_step_rows_total{kind}` | counter | engine steps and token rows, `prefill` / `decode` (with chunked prefill, a step that admits a request or computes a prompt chunk of more than one token counts as `prefill`) |
 | `mini_serve_preemptions_total`, `mini_serve_prefix_cache_hit_blocks_total` | counter | sequences preempted, KV blocks reused from the prefix cache |
 | `mini_serve_engine_seconds_total{part}` | counter | time in the C++ forward pass (`forward`), and its `matmul` and `attention` parts |
 | `mini_serve_running_sequences`, `mini_serve_waiting_sequences` | gauge | batch and queue size |
@@ -99,7 +99,7 @@ flowchart LR
     end
     ec <-->|multiprocessing queues<br/>requests in, tokens out| loop
     subgraph eng [engine process]
-        loop[engine loop] --> sched[Scheduler<br/>continuous or static]
+        loop[engine loop] --> sched[Scheduler<br/>continuous, chunked or static]
         sched --> pool[BlockPool<br/>refcounts, LRU free list,<br/>hash → block prefix cache]
         loop --> llm[LLM.step<br/>flat token batch]
         llm --> runner[Runner, ctypes<br/>sampling]
@@ -114,12 +114,12 @@ flowchart LR
 |---|---|
 | [`src/engine.cpp`](src/engine.cpp) | Llama forward pass over the paged KV pool; C API for ctypes |
 | [`mini_serve/blocks.py`](mini_serve/blocks.py) | block pool: allocation, refcounts, hash-chained prefix cache, LRU reuse |
-| [`mini_serve/scheduler.py`](mini_serve/scheduler.py) | continuous scheduler with preemption; static-batch baseline |
+| [`mini_serve/scheduler.py`](mini_serve/scheduler.py) | continuous scheduler with preemption and optional chunked prefill; static-batch baseline |
 | [`mini_serve/llm.py`](mini_serve/llm.py) | one step: scheduler → flat token batch → runner → scheduler |
 | [`mini_serve/engine.py`](mini_serve/engine.py) | weight loading (safetensors → fp16), ctypes binding, sampling |
-| [`mini_serve/server.py`](mini_serve/server.py) | HTTP server, engine process, streaming detokenizer |
+| [`mini_serve/server.py`](mini_serve/server.py) | HTTP server, engine process, streaming detokenizer, client-disconnect aborts |
 | [`bench/run.py`](bench/run.py) | load generator and benchmark driver |
-| [`tests/`](tests/) | scheduler/pool, HTTP, logits vs transformers |
+| [`tests/`](tests/) | scheduler/pool (with a property test), HTTP, logits vs transformers, chunked prefill, batch composition |
 
 **One step, one forward call.** A step is a flat list of tokens from any number of sequences. Each
 token comes with its position and its sequence's block table. The engine writes the token's K and V
@@ -132,7 +132,7 @@ prompt is `L` rows sharing one block table, with positions `0..L-1`.
 with `seq_len = pos + 1` is exactly causal attention, so the same kernel serves prefill, decode and
 a prefill that starts after a cached prefix, with no mask and no second kernel. The cost is that a
 prompt of `L` tokens reads `L(L+1)/2` K/V rows instead of a tiled `L × L` pass; at the prompt lengths
-used here (≈ 250 tokens) that is a small part of a prefill step.
+used here (205–212 tokens in the benchmark, [`results/bench-prompt-tokens.txt`](results/bench-prompt-tokens.txt)) that is a small part of a prefill step.
 
 **Model.** SmolLM2-135M: 30 layers, hidden 576, 9 query heads and 3 KV heads of dimension 64
 (grouped-query attention), SwiGLU MLP 1536, RoPE θ = 100000, tied embeddings, vocabulary 49152.
@@ -207,7 +207,7 @@ large as these bugs, which is why the test also runs with an fp32 cache.
 ## Numbers
 
 Pending: the final run is made on a quiet machine. Until then this section has no numbers, and
-none of the draft runs made while developing (on a machine at load average 40–80) are reported.
+none of the draft runs made while developing (on a busy machine, with other jobs running) are reported.
 
 ## What I learned
 
@@ -227,7 +227,7 @@ none of the draft runs made while developing (on a machine at load average 40–
    positions start later.
 4. **Greedy decoding is deterministic, but not batch-invariant bit for bit.** The same batch twice
    gives identical logits; the same sequence in a different batch gets logits that differ by
-   summation order (up to 2.48e-2 with the fp16 cache). Tokens matched on every prompt tested,
+   summation order (with the fp16 cache up to 2.48e-2 on this Mac, 3.00e-2 on the CI runner). Tokens matched on every prompt tested,
    but a sequence whose top two logits are that close could change its output with the load on
    the server.
 
