@@ -26,7 +26,10 @@ llama.cpp, MLX or other servers.
 | The tolerance would catch small real bugs | [`scripts/tolerance_probe.py`](scripts/tolerance_probe.py): an RMSNorm eps or RoPE theta off by a little gives 3–4× the fp32 tolerance |
 | Block pool, prefix sharing, preemption and both schedulers keep every sequence's KV history intact | `make test`, `tests/test_scheduler.py`: a fake model checks, for every computed token, that the block table resolves to exactly that sequence's tokens |
 | Chunked prefill (off by default) gives the same logits as prefilling the prompt in one chunk | `make test`, `test_chunked_prefill_matches_one_chunk`: 5 prompts in 7-token chunks mixed with other sequences' decodes, fp32 KV cache; logits of every sampled token within 1e-3 of the one-chunk run (observed 1.01e-4, [`results/make-test.txt`](results/make-test.txt)) and identical greedy tokens. Fake-model scheduler tests at chunk sizes 3, 5, 16 with prefix hits and preemption; the HTTP tests again with `--chunked-prefill 4` |
-| Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 14 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, a partial prefill chunk that samples a token, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
+| Under any interleaving of arrivals, aborts and steps, the pool and scheduler stay consistent | `make test`, `SchedulerPropertyTest`: 300 random pools and policies (static, continuous, chunked, with and without prefix cache), requests added and aborted between any two steps; after every step, refcounts equal the tables holding each block, the free list is exactly the unheld blocks, shared blocks are registered full prefix blocks nobody writes, budgets hold, work never stalls; in the end every request not aborted has the tokens it gets alone and the pool is empty. The cases include preemptions, prefix hits, and aborts of running and of queued requests |
+| A greedy sequence gets the same tokens whatever else is in its batch | `make test`, `test_greedy_is_independent_of_batch_composition`: the 5 prompts alone, together, joining one by one mid-decode, and that with chunked prefill. The same batch twice is bit-identical. A different batch moves the logits by summation order: up to 4.76e-4 with the fp32 cache (bound 2e-3), 2.48e-2 with the fp16 cache (bound 6e-2) ([`results/make-test.txt`](results/make-test.txt)); greedy tokens are compared up to the first near tie: 360 of 360 with fp32, 195 of 360 with fp16, all equal |
+| A client that goes away stops its request and frees its blocks | `make test`, `test_client_disconnect_frees_blocks`: a client leaves mid-stream, one while its request is queued, one mid non-streaming request; each time the engine drops the request (`aborted` in `/metrics`) and every block is free again, long before the 900 tokens asked for |
+| Those tests can tell a broken pool or scheduler from a correct one | `make mutation`: 15 injected bugs (stale cache entry, unchained hash, leaked blocks on preemption, a partial prefill chunk that samples a token, …), each caught ([`scripts/mutation.py`](scripts/mutation.py), [`results/mutation.txt`](results/mutation.txt)) |
 | The HTTP API streams the same text it returns without streaming, and concurrent requests get the same tokens as sequential ones | `make test`, `tests/test_server.py` |
 | `/metrics` is valid Prometheus text and counts what was served | `make test`, `test_metrics_match_load_and_stats`: deltas after a known load, and the same engine counters as `/stats` |
 | Continuous batching and the prefix cache vs a static batch, on one request stream | [Numbers](#numbers) (`make bench`) |
@@ -44,7 +47,7 @@ source; ~270 MB of weights, which `make weights` puts in the standard Hugging Fa
 ```bash
 make test        # build, download weights, venv; scheduler, HTTP and logit tests
 make serve       # http://127.0.0.1:8000
-make mutation    # inject 14 bugs into pool/scheduler, check the tests catch each
+make mutation    # inject 15 bugs into pool/scheduler, check the tests catch each
 make bench LABEL=mine    # static vs continuous vs continuous+prefix, writes results/mine/
 python3 scripts/tables.py mine    # the README tables from results/mine/summary.csv
 make reference   # regenerate tests/data/reference.npz (needs torch + transformers, own venv)
@@ -169,6 +172,11 @@ one finishes. New requests wait for the whole batch. No prefix cache, no preempt
 **Two processes.** The engine loop runs in its own process; the HTTP server talks to it through two
 queues (see [What I learned](#what-i-learned)).
 
+**Client disconnects.** While a handler waits for tokens it checks every 0.1 s whether the client
+closed the connection (the socket reads as EOF), and if so sends an abort: the engine drops the
+request from the queue or frees its blocks. A failed write alone would not do: a queued or
+non-streaming request writes nothing until it is done.
+
 ## Correctness
 
 The reference is `transformers` 4.57.6 / `torch` 2.8.0 on the CPU, fp32, eager attention, with the
@@ -217,6 +225,11 @@ none of the draft runs made while developing (on a machine at load average 40–
 3. **A decode-only attention kernel can serve prefill.** One row per prompt token with
    `seq_len = pos + 1` is causal attention for free, and a prefix-cache hit is just a prefill whose
    positions start later.
+4. **Greedy decoding is deterministic, but not batch-invariant bit for bit.** The same batch twice
+   gives identical logits; the same sequence in a different batch gets logits that differ by
+   summation order (up to 2.48e-2 with the fp16 cache). Tokens matched on every prompt tested,
+   but a sequence whose top two logits are that close could change its output with the load on
+   the server.
 
 ## Limitations
 
@@ -231,6 +244,9 @@ none of the draft runs made while developing (on a machine at load average 40–
 - Preemption only recomputes; no swapping to CPU memory. Victim choice is "most recently admitted".
 - Prefix sharing is per full block of 16 tokens; a shared prefix that ends mid-block shares only its
   full blocks. Hashes are Python `hash` of token tuples, chained; collisions are not checked.
+- Greedy output can depend on what else is in the batch when two logits nearly tie (see
+  [What I learned](#what-i-learned), 4). Which part of the step (GEMM shapes, fp16 rounding of
+  K/V) contributes how much is not measured separately.
 - Sampling: greedy or temperature only (no top-p/top-k, no stop strings, no logprobs, no `seed`).
 - No authentication, no request size limits beyond the KV pool size, single model, single node.
 

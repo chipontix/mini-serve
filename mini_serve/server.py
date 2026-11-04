@@ -16,7 +16,9 @@ import itertools
 import json
 import multiprocessing as mp
 import queue
+import select
 import signal
+import socket
 import sys
 import threading
 import time
@@ -212,29 +214,49 @@ def make_handler(engine, tok):
             def finish_reason(last):
                 return "stop" if last == eos else "length"
 
-            first = box.get()
-            if isinstance(first, str):  # rejected by the scheduler
-                metrics.finished("rejected")
-                return self._error(400, first)
-            t_first = t_last = time.perf_counter()
-            n = 1
+            t_first = t_last = None
+            n = 0
+            checked = time.perf_counter()
+
+            def get():
+                """The next token (None after the last, a string if rejected). Every 0.1 s, also
+                between tokens, checks that the client is still there: a non-streaming or queued
+                request writes nothing until its end, so a failed write would come far too late."""
+                nonlocal checked
+                while True:
+                    try:
+                        item = box.get(timeout=0.1)
+                    except queue.Empty:
+                        item = Ellipsis
+                    if time.perf_counter() - checked >= 0.1:
+                        checked = time.perf_counter()
+                        if self._client_gone():
+                            raise ConnectionResetError("client went away")
+                    if item is not Ellipsis:
+                        return item
 
             def done(outcome):
-                metrics.finished(outcome, len(ids), ttft=t_first - t0, e2e=t_last - t0,
+                metrics.finished(outcome, len(ids), ttft=t_first and t_first - t0, e2e=t_last and t_last - t0,
                                  tpot=(t_last - t_first) / (n - 1) if n > 1 else None)
 
-            if not stream:
-                out = [first]
-                while (t := box.get()) is not None:
-                    out.append(t)
-                    t_last, n = time.perf_counter(), n + 1
-                done("ok")
-                body = chunk(tok.decode(out), finish_reason(out[-1]))
-                body["usage"] = {"prompt_tokens": len(ids), "completion_tokens": len(out),
-                                 "total_tokens": len(ids) + len(out)}
-                return self._json(200, body)
-
             try:
+                first = get()
+                if isinstance(first, str):  # rejected by the scheduler
+                    metrics.finished("rejected")
+                    return self._error(400, first)
+                t_first = t_last = time.perf_counter()
+                n = 1
+                if not stream:
+                    out = [first]
+                    while (t := get()) is not None:
+                        out.append(t)
+                        t_last, n = time.perf_counter(), n + 1
+                    done("ok")
+                    body = chunk(tok.decode(out), finish_reason(out[-1]))
+                    body["usage"] = {"prompt_tokens": len(ids), "completion_tokens": len(out),
+                                     "total_tokens": len(ids) + len(out)}
+                    return self._json(200, body)
+
                 self.send_response(200)
                 self.send_header("Content-Type", "text/event-stream")
                 self.send_header("Cache-Control", "no-cache")
@@ -242,7 +264,7 @@ def make_handler(engine, tok):
                 self.end_headers()
                 detok, t = Detokenizer(tok), first
                 while t is not None:
-                    nxt = box.get()
+                    nxt = get()
                     if nxt is not None:
                         t_last, n = time.perf_counter(), n + 1
                     self._sse(chunk(detok.push(t, final=nxt is None), finish_reason(t) if nxt is None else None))
@@ -253,6 +275,14 @@ def make_handler(engine, tok):
             except (BrokenPipeError, ConnectionResetError):
                 engine.abort(sid)
                 done("aborted")
+
+        def _client_gone(self):
+            """The client closed its end of the connection: the socket reads as EOF or fails."""
+            try:
+                readable, _, _ = select.select([self.connection], [], [], 0)
+                return bool(readable) and self.connection.recv(1, socket.MSG_PEEK) == b""
+            except OSError:
+                return True
 
         def _sse(self, obj):
             data = obj if isinstance(obj, str) else json.dumps(obj)

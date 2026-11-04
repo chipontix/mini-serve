@@ -304,5 +304,96 @@ class SchedulerTest(unittest.TestCase):
             sched.add(Sequence([1] * 6, max_tokens=4))
 
 
+
+def check_invariants(tc, pool, sched, batch=None):
+    """What must hold between any two steps, whatever the policy and the history."""
+    P = pool.page_size
+    holders = {}
+    for seq in sched.running:
+        tc.assertEqual(len(set(seq.blocks)), len(seq.blocks), "a block twice in one table")
+        tc.assertLessEqual(seq.num_computed, len(seq.tokens))
+        tc.assertGreaterEqual(len(seq.blocks) * P, seq.num_computed)
+        tc.assertLessEqual(len(seq.hashes), seq.num_computed // P)
+        for i, b in enumerate(seq.blocks):
+            holders.setdefault(b, []).append((seq, i))
+    for seq in sched.waiting:
+        tc.assertEqual((seq.blocks, seq.num_computed), ([], 0), "a waiting sequence holds blocks")
+    # Reference counts are exactly the number of tables holding the block; the free list is
+    # exactly the blocks nobody holds.
+    for b in range(pool.num_blocks):
+        tc.assertEqual(pool.ref[b], len(holders.get(b, [])), f"refcount of block {b}")
+    tc.assertEqual(set(pool.free), {b for b in range(pool.num_blocks) if pool.ref[b] == 0})
+    # A shared block is a full, registered prefix block at the same index with the same hash in
+    # every table, and nobody writes into it.
+    for b, hs in holders.items():
+        if len(hs) > 1:
+            tc.assertFalse(sched.static, "static batches share nothing")
+            tc.assertEqual(len({i for _, i in hs}), 1)
+            tc.assertEqual(len({seq.hashes[i] if i < len(seq.hashes) else None for seq, i in hs}), 1)
+            tc.assertIsNotNone(hs[0][0].hashes[hs[0][1]] if hs[0][1] < len(hs[0][0].hashes) else None)
+    for seq in sched.running:
+        for b in seq.blocks[seq.num_computed // P:]:
+            tc.assertEqual(pool.ref[b], 1, "a block still to be written is shared")
+    tc.assertEqual({pool.by_hash[h] for h in pool.by_hash}, set(pool.hash_of))
+    tc.assertTrue(all(pool.by_hash[h] == b for b, h in pool.hash_of.items()))
+    tc.assertLessEqual(len(sched.running), sched.max_num_seqs)
+    if batch is not None:
+        n = sum(e - s for _, s, e in batch.items)
+        if sched.chunk_size:
+            tc.assertLessEqual(n, sched.chunk_size)
+        elif batch.prefill and not sched.static:
+            first = batch.items[0]
+            tc.assertLessEqual(n, max(sched.max_prefill_tokens, first[2] - first[1]))
+
+
+class SchedulerPropertyTest(unittest.TestCase):
+    """Random pools, policies and request streams, with requests added and aborted between any
+    two steps. After every step the invariants above hold, the fake runner has checked every
+    row's attention history, and in the end every request that was not aborted has exactly the
+    tokens it would get running alone, and every block is free."""
+
+    def test_random_histories(self):
+        for case in range(300):
+            rng = random.Random(case)
+            static = rng.random() < 0.2
+            page = rng.randint(1, 5)
+            num_blocks = rng.randint(4, 40)
+            kw = dict(max_num_seqs=rng.randint(1, 6), max_prefill_tokens=rng.randint(1, 24))
+            if not static and rng.random() < 0.5:
+                kw["chunk_size"] = rng.randint(1, 10)
+            pool = BlockPool(num_blocks, page, prefix_cache=not static and rng.random() < 0.8)
+            sched = Scheduler(pool, static=static, **kw)
+            llm = LLM(FakeRunner(pool), sched)
+            prefixes = [[rng.randrange(20) for _ in range(rng.randint(0, 3 * page))] for _ in range(3)]
+            seqs, aborted = [], set()
+            msg = f"case {case}: static={static} page={page} blocks={num_blocks} {kw}"
+            for _ in range(rng.randint(5, 120)):
+                r = rng.random()
+                if r < 0.25:
+                    prompt = rng.choice(prefixes) + [rng.randrange(20) for _ in range(rng.randint(1, 2 * page + 3))]
+                    seq = Sequence(prompt, max_tokens=rng.randint(1, 3 * page))
+                    try:
+                        sched.add(seq)
+                    except ValueError:
+                        continue
+                    seqs.append(seq)
+                elif r < 0.32 and seqs:
+                    seq = rng.choice(seqs)
+                    if not seq.finished:
+                        sched.abort(seq)
+                        aborted.add(seq.id)
+                else:
+                    busy = sched.has_work()
+                    out = llm.step()
+                    self.assertEqual(out is not None, busy, msg)  # never stuck with work
+                check_invariants(self, pool, sched, out[0] if r >= 0.32 and out else None)
+            while (out := llm.step()):
+                check_invariants(self, pool, sched, out[0])
+            for seq in seqs:
+                if seq.id not in aborted:
+                    self.assertEqual(seq.output, reference(seq.prompt, seq.max_tokens), msg)
+            assert_pool_clean(self, pool)
+
+
 if __name__ == "__main__":
     unittest.main()

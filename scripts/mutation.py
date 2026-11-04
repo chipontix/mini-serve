@@ -35,6 +35,8 @@ MUTATIONS = [  # (file, original, replacement, what the bug is[, test to run])
      "block hash not chained to the prefix"),
     ("mini_serve/blocks.py", "self.free[b] = None  # most recently freed: evicted last", "self.free[b] = None; self.free.move_to_end(b, last=False)",
      "free list evicts the most recently freed block first"),
+    ("mini_serve/scheduler.py", "            self.running.remove(seq)\n            self._free(seq)\n\n",
+     "            self.running.remove(seq)\n\n", "abort of a running sequence keeps its blocks"),
     ("mini_serve/scheduler.py", "key=lambda s: left(s) > 1)", "key=lambda s: left(s) == 1)",
      "chunked step: prefill chunks before decodes"),
     ("mini_serve/scheduler.py", "            n = min(n, budget)\n", "",

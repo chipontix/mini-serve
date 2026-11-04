@@ -3,7 +3,9 @@
 import http.client
 import json
 import re
+import socket
 import threading
+import time
 import unittest
 
 from tokenizers import Tokenizer
@@ -144,6 +146,47 @@ class ServerTest(unittest.TestCase):
             buckets = [v for (n, _), v in after.items() if n == name + "_bucket"]
             self.assertEqual(buckets, sorted(buckets), name)
             self.assertEqual(after[(name + "_bucket", '{le="+Inf"}')], after[(name + "_count", "")], name)
+
+    def open_request(self, body):
+        """Sends a completion request on a raw socket and returns the socket, unread."""
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=30)
+        data = json.dumps(body).encode()
+        sock.sendall(b"POST /v1/completions HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
+                     b"Content-Length: %d\r\n\r\n" % len(data) + data)
+        return sock
+
+    def wait_stats(self, cond, timeout=10):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            stats = json.loads(self.get("/stats")[1])
+            if cond(stats):
+                return stats
+            time.sleep(0.05)
+        self.fail(f"engine state not reached: {stats}")
+
+    def test_client_disconnect_frees_blocks(self):
+        """A client that goes away mid-stream, mid non-streaming request, or while its request is
+        still queued: the engine drops the request and the pool is whole again, long before the
+        900 tokens it asked for would have been generated."""
+        aborted = lambda: parse_metrics(self.get("/metrics")[1])[0][("mini_serve_requests_total", '{outcome="aborted"}')]
+        before = aborted()
+        body = {"prompt": "Once upon a time", "max_tokens": 900, "temperature": 0, "ignore_eos": True}
+        a = self.open_request(dict(body, stream=True))
+        self.assertTrue(a.recv(4096).startswith(b"HTTP/1.1 200"))  # sent after its first token
+        b = self.open_request({"prompt": [100] * 1010, "max_tokens": 1})  # all 64 blocks: waits behind a
+        self.wait_stats(lambda s: s["running"] == 1 and s["waiting"] == 1)
+        b.close()                                            # gone while queued
+        self.wait_stats(lambda s: s["running"] == 1 and s["waiting"] == 0)
+        a.close()                                            # gone mid-stream
+        self.wait_stats(lambda s: s["running"] == 0 and s["free_blocks"] == s["num_blocks"])
+        c = self.open_request(body)                          # non-streaming: nothing is written until the end
+        self.wait_stats(lambda s: s["running"] == 1)
+        c.close()
+        self.wait_stats(lambda s: s["running"] == 0 and s["free_blocks"] == s["num_blocks"])
+        deadline = time.monotonic() + 5
+        while aborted() - before < 3 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertEqual(aborted() - before, 3)
 
     def test_errors(self):
         self.assertEqual(self.post({"max_tokens": 3}).status, 400)                       # no prompt
