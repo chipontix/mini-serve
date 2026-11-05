@@ -206,18 +206,95 @@ large as these bugs, which is why the test also runs with an fp32 cache.
 
 ## Numbers
 
-Pending: the final run is made on a quiet machine. Until then this section has no numbers, and
-none of the draft runs made while developing (on a busy machine, with other jobs running) are reported.
+One final run on 2026-11-05, commit `a6762bd`, Apple M4 Max, SmolLM2-135M, 1024 KV blocks of 16
+tokens unless stated. The machine was not idle: 5-minute load average 7.4 at the start, the 1-minute
+load average sampled every 30 s peaked at 6.65, and another job (`node`) used about three cores
+([`results/final-20261105/env.txt`](results/final-20261105/env.txt), [`top.txt`](results/final-20261105/top.txt)).
+Each configuration got the same seeded Poisson stream; SLO: TTFT ≤ 1 s and TPOT ≤ 100 ms.
+Reproduce with `make bench LABEL=final-20261105`, then `python3 scripts/tables.py final-20261105`.
+
+**Same request stream at each rate** (final-20261105, 1024 blocks)
+
+| req/s | config | TTFT p50 / p99, ms | TPOT p50 / p99, ms | tok/s | goodput, req/s | SLO met | mean decode batch | prefix-hit blocks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2 | static | 1128 / 3105 | 18 / 21 | 164 | 0.91 | 44% | 3.0 | 0 |
+| 2 | continuous | 82 / 189 | 21 / 24 | 165 | 2.09 | 100% | 3.2 | 0 |
+| 2 | continuous+prefix | 46 / 60 | 19 / 20 | 165 | 2.10 | 100% | 3.0 | 2515 |
+| 4 | static | 1735 / 3615 | 21 / 22 | 308 | 0.78 | 20% | 7.0 | 0 |
+| 4 | continuous | 87 / 251 | 24 / 35 | 322 | 4.08 | 100% | 7.7 | 0 |
+| 4 | continuous+prefix | 48 / 73 | 20 / 22 | 323 | 4.10 | 100% | 6.5 | 2515 |
+| 8 | static | 3417 / 6283 | 23 / 24 | 547 | 0.28 | 4% | 15.0 | 0 |
+| 8 | continuous | 141 / 809 | 40 / 48 | 612 | 7.76 | 100% | 20.9 | 0 |
+| 8 | continuous+prefix | 52 / 81 | 23 / 26 | 616 | 7.81 | 100% | 13.7 | 2515 |
+| 16 | static | 7596 / 13594 | 23 / 24 | 598 | 0.34 | 4% | 17.0 | 0 |
+| 16 | continuous | 4405 / 8509 | 42 / 53 | 704 | 1.79 | 20% | 28.1 | 0 |
+| 16 | continuous+prefix | 1158 / 1943 | 27 / 29 | 1031 | 5.88 | 45% | 26.4 | 2515 |
+| 32 | static | 9702 / 17934 | 22 / 24 | 609 | 0.35 | 4% | 17.1 | 0 |
+| 32 | continuous | 6995 / 13950 | 42 / 52 | 707 | 0.90 | 10% | 28.8 | 0 |
+| 32 | continuous+prefix | 3572 / 7074 | 28 / 31 | 1036 | 2.63 | 20% | 28.0 | 2515 |
+
+**KV pool size at 32 req/s**
+
+| blocks (tokens) | config | tok/s | TTFT p50, ms | TPOT p50, ms | goodput, req/s | preemptions | mean decode batch |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 64 (1024) | static | 126 | 59922 | 19 | 0.03 | 0 | 2.3 |
+| 64 (1024) | continuous+prefix | 508 | 10658 | 29 | 0.77 | 558 | 12.2 |
+| 96 (1536) | static | 181 | 40536 | 18 | 0.07 | 0 | 3.5 |
+| 96 (1536) | continuous+prefix | 721 | 6273 | 32 | 1.46 | 599 | 19.8 |
+| 128 (2048) | static | 216 | 32016 | 19 | 0.10 | 0 | 4.3 |
+| 128 (2048) | continuous+prefix | 920 | 4515 | 31 | 2.10 | 309 | 25.8 |
+| 192 (3072) | static | 287 | 22774 | 21 | 0.15 | 0 | 6.5 |
+| 192 (3072) | continuous+prefix | 1058 | 3356 | 27 | 2.75 | 0 | 28.0 |
+| 256 (4096) | static | 356 | 18592 | 21 | 0.20 | 0 | 8.5 |
+| 256 (4096) | continuous+prefix | 1044 | 3514 | 28 | 2.65 | 0 | 28.0 |
+| 1024 (16384) | static | 602 | 9780 | 23 | 0.34 | 0 | 17.1 |
+| 1024 (16384) | continuous+prefix | 1048 | 3535 | 28 | 2.66 | 0 | 28.1 |
+
+**Where a step's time goes** (sums over the measured run)
+
+| req/s | config | steps | ms per step | matmul (CPU) | attention (GPU, incl. wait) | rest of engine | Python scheduler + sampling |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2 | static | 5312 | 18.1 | 58% | 36% | 5% | 1% |
+| 2 | continuous | 5131 | 17.7 | 57% | 36% | 6% | 1% |
+| 2 | continuous+prefix | 5433 | 16.5 | 59% | 38% | 2% | 1% |
+| 4 | static | 2251 | 22.7 | 57% | 32% | 10% | 1% |
+| 4 | continuous | 2212 | 22.1 | 57% | 31% | 10% | 1% |
+| 4 | continuous+prefix | 2574 | 18.9 | 61% | 34% | 4% | 1% |
+| 8 | static | 1047 | 27.4 | 51% | 29% | 19% | 1% |
+| 8 | continuous | 917 | 28.0 | 50% | 29% | 19% | 2% |
+| 8 | continuous+prefix | 1313 | 19.4 | 58% | 34% | 7% | 2% |
+| 16 | static | 924 | 28.4 | 50% | 28% | 20% | 2% |
+| 16 | continuous | 708 | 31.5 | 48% | 28% | 23% | 2% |
+| 16 | continuous+prefix | 753 | 20.2 | 52% | 34% | 11% | 2% |
+| 32 | static | 921 | 28.0 | 50% | 29% | 20% | 2% |
+| 32 | continuous | 686 | 32.4 | 47% | 28% | 23% | 2% |
+| 32 | continuous+prefix | 715 | 21.2 | 53% | 33% | 11% | 3% |
+
+What the tables say:
+
+- Up to 8 req/s continuous batching meets the SLO for every request; the static batch meets it for
+  44% at 2 req/s and 4% at 8 req/s, because a request waits for the whole previous batch.
+- The prefix cache cuts TTFT p50 from 141 ms to 52 ms at 8 req/s and lets the server go further:
+  at 16 req/s it delivers 1031 tok/s and 45% within the SLO against 704 tok/s and 20% without it.
+- At 16 req/s and above all three configurations are past saturation; throughput levels off near
+  600 (static), 705 (continuous) and 1035 tok/s (with prefix cache).
+- With a small pool continuous batching stops helping as much: at 64 blocks it preempts 558 times
+  and gets 0.77 req/s of goodput; from 192 blocks on there are no preemptions and goodput stays at
+  2.65–2.75 req/s, so beyond that the pool is not the limit.
+- Matmuls on the CPU take about half of each step and GPU attention (including the wait) about a
+  third; the Python scheduler and sampling stay at 1–3%.
 
 ## What I learned
 
-1. **In one Python process, the HTTP threads competed with the engine for the GIL.** The first
-   server ran the engine loop in a thread next to the handler threads. The forward pass releases
-   the GIL (ctypes), but after every step the engine thread had to get it back from threads busy
-   decoding and writing tokens, and in draft runs a large share of each step was spent outside the
-   C++ forward pass, against a few percent for the same steps run offline. The engine now runs in
-   its own process. The A/B ([`scripts/gil_ab.sh`](scripts/gil_ab.sh), commit `dae6341` vs this one)
-   is pending the quiet-machine run.
+1. **The engine moved to its own process, but the A/B does not show it was needed.** The first
+   server ran the engine loop in a thread next to the HTTP handler threads, and in draft runs a
+   large share of each step was spent outside the C++ forward pass. The engine now runs in its own
+   process. The A/B ([`scripts/gil_ab.sh`](scripts/gil_ab.sh), commit `dae6341` vs `a6762bd`, two
+   interleaved rounds of 24 requests at 4 req/s, [`results/gil-ab/tables.md`](results/gil-ab/tables.md))
+   finds 0.7–0.8% of step time outside the C++ forward pass on both sides and 17.8–21.1 ms per step
+   on both. The draft-run overhead most likely came from `tok.get_vocab_size()`, which `dae6341`
+   called once per prompt token (about 1 s with the GIL held per request) and which the A/B fixes on
+   both sides. The separate process stays; this load is too light to tell whether it matters.
 2. **Requests that arrive in the same step do not share their prefix.** Blocks are registered in
    the cache after the step that computed them, so a burst of requests with the same system prompt
    admitted together all compute it. The scheduler test had to admit one request first to see any

@@ -1,0 +1,308 @@
+--- 11:32:16 load 5.36
+ %CPU COMM
+300.2 node
+ 28.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 14.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 13.6 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+--- 11:32:46 load 4.97
+ %CPU COMM
+199.7 node
+102.3 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.1 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.1 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:33:16 load 4.42
+ %CPU COMM
+230.2 node
+ 81.8 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 13.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.9 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+  6.4 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:33:46 load 4.94
+ %CPU COMM
+238.6 node
+ 83.0 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.9 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  1.8 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:34:16 load 5.19
+ %CPU COMM
+231.8 node
+ 78.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 13.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  6.1 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:34:46 load 4.50
+ %CPU COMM
+343.1 node
+ 85.4 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.4 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.3 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:35:17 load 4.95
+ %CPU COMM
+375.5 node
+ 12.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.6 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+  9.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.5 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:35:47 load 5.05
+ %CPU COMM
+368.3 node
+ 66.1 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.3 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:36:17 load 5.06
+ %CPU COMM
+307.1 node
+ 79.9 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 14.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.4 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.9 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:36:47 load 4.89
+ %CPU COMM
+310.2 node
+ 79.4 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.2 /home/dev/Library/Application Support/Claude/claude-code/2.1.309/5af865b9901c/claude.app/Contents/MacOS/claude
+--- 11:37:17 load 4.91
+ %CPU COMM
+305.2 node
+ 78.9 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 14.4 /System/Library/PrivateFrameworks/IntelligencePlatformCompute.framework/Versions/A/XPCServices/IntelligencePlatformComputeService.xpc/Contents/MacOS/IntelligencePlatformComputeService
+ 14.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.6 /usr/libexec/dasd
+--- 11:37:47 load 4.98
+ %CPU COMM
+356.2 node
+141.1 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.4 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  5.2 /home/dev/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3
+--- 11:38:17 load 5.37
+ %CPU COMM
+301.1 node
+ 77.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 15.9 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+ 15.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.4 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:38:47 load 5.44
+ %CPU COMM
+329.3 node
+ 84.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.9 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:39:17 load 5.80
+ %CPU COMM
+330.5 node
+ 79.9 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 52.7 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+ 16.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.9 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:39:47 load 6.03
+ %CPU COMM
+332.3 node
+ 83.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 17.0 /home/dev/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3
+ 11.8 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+ 11.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+--- 11:40:17 load 6.28
+ %CPU COMM
+300.8 node
+ 99.0 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 14.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.1 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  5.0 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:40:47 load 5.99
+ %CPU COMM
+306.6 node
+ 95.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 46.5 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.80/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+ 12.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.8 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:41:17 load 5.63
+ %CPU COMM
+367.5 node
+ 83.0 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 13.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.2 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:41:47 load 6.12
+ %CPU COMM
+327.2 node
+ 82.9 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.4 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:42:17 load 6.65
+ %CPU COMM
+233.4 node
+ 97.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 12.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.2 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:42:47 load 5.52
+ %CPU COMM
+ 99.7 node
+ 80.1 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 12.0 /home/dev/.hermes/hermes-agent/apps/desktop/release/mac-arm64/Hermes.app/Contents/Frameworks/Hermes Helper (Renderer).app/Contents/MacOS/Hermes Helper (Renderer)
+ 10.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:43:17 load 4.77
+ %CPU COMM
+100.6 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.5 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+  3.3 /home/dev/Library/Application Support/Claude/claude-code/2.1.309/5af865b9901c/claude.app/Contents/MacOS/claude
+--- 11:43:47 load 4.96
+ %CPU COMM
+341.2 node
+ 81.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 20.8 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+ 12.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.6 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:44:17 load 5.66
+ %CPU COMM
+359.7 node
+ 77.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.4 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:44:47 load 5.53
+ %CPU COMM
+302.3 node
+ 78.6 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.6 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.1 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:45:17 load 4.81
+ %CPU COMM
+100.9 node
+ 77.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  1.9 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:45:48 load 5.04
+ %CPU COMM
+402.1 node
+ 76.4 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.6 /home/dev/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3
+--- 11:46:18 load 5.25
+ %CPU COMM
+298.9 node
+ 85.1 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.0 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.6 /home/dev/Library/Application Support/Claude/claude-code/2.1.309/5af865b9901c/claude.app/Contents/MacOS/claude
+--- 11:46:48 load 5.21
+ %CPU COMM
+300.5 node
+ 81.1 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.7 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+--- 11:47:18 load 5.26
+ %CPU COMM
+298.9 node
+106.3 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.9 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.0 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+--- 11:47:48 load 5.11
+ %CPU COMM
+199.4 node
+ 92.8 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.7 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+--- 11:48:18 load 4.70
+ %CPU COMM
+386.2 node
+ 84.0 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.1 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.4 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+--- 11:48:48 load 4.86
+ %CPU COMM
+300.6 node
+ 83.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.9 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.6 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.80/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+--- 11:49:18 load 5.05
+ %CPU COMM
+305.1 node
+ 77.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.1 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.9 /home/dev/.hermes/tools/python-3.14.9+20261021-darwin-arm64/bin/python3
+--- 11:49:48 load 4.98
+ %CPU COMM
+297.2 node
+ 83.8 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 17.8 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.76/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+ 11.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:50:18 load 5.50
+ %CPU COMM
+301.1 node
+129.3 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.2 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:50:48 load 5.33
+ %CPU COMM
+197.3 node
+ 93.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.0 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.4 /usr/libexec/locationd
+--- 11:51:18 load 4.63
+ %CPU COMM
+ 99.1 node
+ 79.7 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 11.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.5 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.7 /home/dev/Library/Application Support/Claude/claude-code/2.1.309/5af865b9901c/claude.app/Contents/MacOS/claude
+--- 11:51:48 load 4.96
+ %CPU COMM
+298.6 node
+ 85.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.0 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.3 /home/dev/Library/Application Support/Claude/claude-code/2.1.309/5af865b9901c/claude.app/Contents/MacOS/claude
+--- 11:52:18 load 5.15
+ %CPU COMM
+299.7 node
+ 78.0 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  1.9 /Applications/WhatsApp.app/Contents/MacOS/WhatsApp
+--- 11:52:48 load 5.24
+ %CPU COMM
+300.4 node
+ 83.2 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.2 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+--- 11:53:18 load 5.42
+ %CPU COMM
+299.6 node
+ 80.5 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python
+ 12.4 /Applications/Telegram.app/Contents/MacOS/Telegram
+ 11.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.9 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+--- 11:53:23 load 5.42
+ %CPU COMM
+300.2 node
+ 10.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.5 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  2.2 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
